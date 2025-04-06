@@ -6,30 +6,35 @@ Sub 分類データ貼り付け()
     Dim currentCategory As String
     Dim startRow As Long, endRow As Long
     Dim colStart As Long, colEnd As Long
-    Dim dateValue As String
+    Dim reportDate As String, dateValue As String
     Dim targetLastRow As Long
     Dim isEmptyRow As Boolean, hasData As Boolean
     Dim c As Range
-    Dim reportDate As String
 
-    ' 日付取得（命名変数）
+    ' ✅ reportDate（命名範囲）から取得
     On Error Resume Next
     reportDate = Evaluate(ThisWorkbook.Names("reportDate").RefersTo)
     On Error GoTo 0
 
     If reportDate = "" Then
-        MsgBox "日付が取得できません。先にタイトル識別処理を実行してください。", vbExclamation, "エラー"
+        MsgBox "日付が取得できません。先にタイトル識別処理を実行してください。", vbExclamation
         Exit Sub
     End If
 
+    ' "DD" 部分を取得（例：20241219 → "19"）
     dateValue = Right(reportDate, 2)
 
+    ' データ元シート ("日報転記") を設定
     Set wsSource = ThisWorkbook.Sheets("日報転記")
     lastRow = wsSource.Cells(wsSource.Rows.Count, "B").End(xlUp).Row
 
+    ' カテゴリ名のリスト（"定期巡回" はスキップ）
     categoryNames = Array("顧客対応", "障害対応", "その他", "KIX11業務")
+
+    ' Dictionary を作成してカテゴリの行番号を保存
     Set categoryRow = CreateObject("Scripting.Dictionary")
 
+    ' カテゴリの行番号を検索
     For i = 1 To lastRow
         For j = LBound(categoryNames) To UBound(categoryNames)
             If wsSource.Cells(i, 2).Value = categoryNames(j) Then
@@ -38,13 +43,13 @@ Sub 分類データ貼り付け()
         Next j
     Next i
 
+    ' 各カテゴリごとにデータを貼り付け
     For j = LBound(categoryNames) To UBound(categoryNames)
         currentCategory = categoryNames(j)
 
         If categoryRow.exists(currentCategory) Then
             startRow = categoryRow(currentCategory) + 1
             endRow = lastRow
-
             For i = startRow To lastRow
                 If categoryRow.exists(wsSource.Cells(i, 2).Value) And wsSource.Cells(i, 2).Value <> "定期巡回" Then
                     endRow = i - 1
@@ -67,12 +72,12 @@ Sub 分類データ貼り付け()
         End If
 
         hasData = False
-        colStart = 39
+        colStart = 39 ' AM列
 
         If startRow > 0 And endRow >= startRow Then
             For i = startRow To endRow
                 isEmptyRow = True
-                For Each c In wsSource.Range(wsSource.Cells(i, colStart), wsSource.Cells(i, wsSource.Columns.Count).End(xlToLeft))
+                For Each c In wsSource.Range(wsSource.Cells(i, colStart), wsSource.Cells(i, colStart + 40))
                     If Trim(c.Value) <> "" Then
                         isEmptyRow = False
                         Exit For
@@ -83,12 +88,13 @@ Sub 分類データ貼り付け()
 
                 colEnd = wsSource.Cells(i, wsSource.Columns.Count).End(xlToLeft).Column
                 If colEnd < colStart Then colEnd = colStart
+                If colEnd > colStart + 40 Then colEnd = colStart + 40
 
                 wsTarget.Cells(targetLastRow, 1).Value = dateValue
                 wsSource.Range(wsSource.Cells(i, colStart), wsSource.Cells(i, colEnd)).Copy
                 wsTarget.Cells(targetLastRow, 2).PasteSpecial Paste:=xlPasteValues
 
-                targetLastRow = targetLastRow + 1
+                targetLastRow = wsTarget.Cells(wsTarget.Rows.Count, "A").End(xlUp).Row + 1
                 hasData = True
 SkipRow:
             Next i
@@ -100,9 +106,11 @@ SkipRow:
         End If
     Next j
 
-    MsgBox "分類データの貼り付けが完了しました！", vbInformation, "完了"
-End Sub
-Sub 一括日報処理()
-    Call 更新と精度向上したタイトル識別
-    Call 分類データ貼り付け
+    MsgBox "✅ 分類データの貼り付けが完了しました！", vbInformation
+
+    ' ✅ 処理後、「日報転記」シートを削除
+    Application.DisplayAlerts = False
+    ThisWorkbook.Sheets("日報転記").Delete
+    Application.DisplayAlerts = True
+
 End Sub
