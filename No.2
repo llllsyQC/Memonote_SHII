@@ -1,0 +1,100 @@
+Sub 分類データ貼り付け()
+    Dim wsSource As Worksheet, wsTarget As Worksheet
+    Dim lastRow As Long, i As Long, j As Long
+    Dim categoryRow As Object
+    Dim categoryNames As Variant
+    Dim currentCategory As String
+    Dim startRow As Long, endRow As Long
+    Dim colStart As Long, colEnd As Long
+    Dim dateValue As String
+    Dim targetLastRow As Long
+    Dim isEmptyRow As Boolean, hasData As Boolean
+    Dim c As Range
+
+    ' グローバル変数から日付取得
+    If reportDate = "" Then
+        MsgBox "日付が取得できません。先にタイトル識別処理を実行してください。", vbExclamation, "エラー"
+        Exit Sub
+    End If
+
+    dateValue = Right(reportDate, 2)
+
+    Set wsSource = ThisWorkbook.Sheets("日報転記")
+    lastRow = wsSource.Cells(wsSource.Rows.Count, "B").End(xlUp).Row
+    categoryNames = Array("顧客対応", "障害対応", "その他", "KIX11業務")
+
+    Set categoryRow = CreateObject("Scripting.Dictionary")
+
+    For i = 1 To lastRow
+        For j = LBound(categoryNames) To UBound(categoryNames)
+            If wsSource.Cells(i, 2).Value = categoryNames(j) Then
+                categoryRow(categoryNames(j)) = i
+            End If
+        Next j
+    Next i
+
+    For j = LBound(categoryNames) To UBound(categoryNames)
+        currentCategory = categoryNames(j)
+
+        If categoryRow.exists(currentCategory) Then
+            startRow = categoryRow(currentCategory) + 1
+            endRow = lastRow
+
+            For i = startRow To lastRow
+                If categoryRow.exists(wsSource.Cells(i, 2).Value) And wsSource.Cells(i, 2).Value <> "定期巡回" Then
+                    endRow = i - 1
+                    Exit For
+                End If
+            Next i
+        Else
+            startRow = 0
+            endRow = 0
+        End If
+
+        Set wsTarget = GetOrCreateSheet(currentCategory)
+        wsTarget.Cells.UnMerge
+
+        If Application.WorksheetFunction.CountA(wsTarget.Range("A:A")) = 0 Then
+            targetLastRow = 1
+        Else
+            targetLastRow = wsTarget.Cells(wsTarget.Rows.Count, "A").End(xlUp).Row
+            If wsTarget.Cells(targetLastRow, 1).Value <> "" Then targetLastRow = targetLastRow + 1
+        End If
+
+        hasData = False
+        colStart = 39
+
+        If startRow > 0 And endRow >= startRow Then
+            For i = startRow To endRow
+                isEmptyRow = True
+
+                For Each c In wsSource.Range(wsSource.Cells(i, colStart), wsSource.Cells(i, wsSource.Columns.Count).End(xlToLeft))
+                    If Trim(c.Value) <> "" Then
+                        isEmptyRow = False
+                        Exit For
+                    End If
+                Next c
+
+                If isEmptyRow Then GoTo SkipRow
+
+                colEnd = wsSource.Cells(i, wsSource.Columns.Count).End(xlToLeft).Column
+                If colEnd < colStart Then colEnd = colStart
+
+                wsTarget.Cells(targetLastRow, 1).Value = dateValue
+                wsSource.Range(wsSource.Cells(i, colStart), wsSource.Cells(i, colEnd)).Copy
+                wsTarget.Cells(targetLastRow, 2).PasteSpecial Paste:=xlPasteValues
+
+                targetLastRow = targetLastRow + 1
+                hasData = True
+SkipRow:
+            Next i
+        End If
+
+        If hasData = False Then
+            wsTarget.Cells(targetLastRow, 1).Value = dateValue
+            wsTarget.Cells(targetLastRow, 3).Value = "なし"
+        End If
+    Next j
+
+    MsgBox "分類データの貼り付けが完了しました！", vbInformation, "完了"
+End Sub
