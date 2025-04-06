@@ -1,0 +1,66 @@
+For j = LBound(categoryNames) To UBound(categoryNames)
+    currentCategory = categoryNames(j)
+
+    If categoryRow.exists(currentCategory) Then
+        startRow = categoryRow(currentCategory) + 1
+        endRow = lastRow
+
+        For i = startRow To lastRow
+            If categoryRow.exists(wsSource.Cells(i, 2).Value) And wsSource.Cells(i, 2).Value <> "定期巡回" Then
+                endRow = i - 1
+                Exit For
+            End If
+        Next i
+    Else
+        startRow = 0
+        endRow = 0
+    End If
+
+    Set wsTarget = GetOrCreateSheet(currentCategory)
+    wsTarget.Cells.UnMerge
+
+    If Application.WorksheetFunction.CountA(wsTarget.Range("A:A")) = 0 Then
+        targetLastRow = 1
+    Else
+        targetLastRow = wsTarget.Cells(wsTarget.Rows.Count, "A").End(xlUp).Row
+        If wsTarget.Cells(targetLastRow, 1).Value <> "" Then targetLastRow = targetLastRow + 1
+    End If
+
+    hasData = False
+    colStart = 39 ' AM列（工数数据开始）
+
+    If startRow > 0 And endRow >= startRow Then
+        For i = startRow To endRow
+            ' ✅ 修复1：稳定判断是否为空行
+            isEmptyRow = True
+            For Each c In wsSource.Range(wsSource.Cells(i, colStart), wsSource.Cells(i, colStart + 40))
+                If Trim(c.Value) <> "" Then
+                    isEmptyRow = False
+                    Exit For
+                End If
+            Next c
+
+            If isEmptyRow Then GoTo SkipRow
+
+            ' ✅ 修复2：稳定计算粘贴的列范围，限制最大列
+            colEnd = wsSource.Cells(i, wsSource.Columns.Count).End(xlToLeft).Column
+            If colEnd < colStart Then colEnd = colStart
+            If colEnd > colStart + 40 Then colEnd = colStart + 40
+
+            ' ✅ 粘贴数据（日期+数据）
+            wsTarget.Cells(targetLastRow, 1).Value = dateValue
+            wsSource.Range(wsSource.Cells(i, colStart), wsSource.Cells(i, colEnd)).Copy
+            wsTarget.Cells(targetLastRow, 2).PasteSpecial Paste:=xlPasteValues
+
+            targetLastRow = targetLastRow + 1
+            hasData = True
+SkipRow:
+        Next i
+    End If
+
+    ' ✅ 如果没数据，只写入日期+“なし”
+    If hasData = False Then
+        wsTarget.Cells(targetLastRow, 1).Value = dateValue
+        wsTarget.Cells(targetLastRow, 3).Value = "なし"
+    End If
+Next j
