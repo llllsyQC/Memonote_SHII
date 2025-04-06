@@ -10,8 +10,13 @@ Sub 分類データ貼り付け()
     Dim targetLastRow As Long
     Dim isEmptyRow As Boolean, hasData As Boolean
     Dim c As Range
+    Dim reportDate As String
 
-    ' グローバル変数から日付取得
+    ' 日付取得（命名変数）
+    On Error Resume Next
+    reportDate = Evaluate(ThisWorkbook.Names("reportDate").RefersTo)
+    On Error GoTo 0
+
     If reportDate = "" Then
         MsgBox "日付が取得できません。先にタイトル識別処理を実行してください。", vbExclamation, "エラー"
         Exit Sub
@@ -21,8 +26,8 @@ Sub 分類データ貼り付け()
 
     Set wsSource = ThisWorkbook.Sheets("日報転記")
     lastRow = wsSource.Cells(wsSource.Rows.Count, "B").End(xlUp).Row
-    categoryNames = Array("顧客対応", "障害対応", "その他", "KIX11業務")
 
+    categoryNames = Array("顧客対応", "障害対応", "その他", "KIX11業務")
     Set categoryRow = CreateObject("Scripting.Dictionary")
 
     For i = 1 To lastRow
@@ -67,7 +72,6 @@ Sub 分類データ貼り付け()
         If startRow > 0 And endRow >= startRow Then
             For i = startRow To endRow
                 isEmptyRow = True
-
                 For Each c In wsSource.Range(wsSource.Cells(i, colStart), wsSource.Cells(i, wsSource.Columns.Count).End(xlToLeft))
                     If Trim(c.Value) <> "" Then
                         isEmptyRow = False
@@ -98,7 +102,6 @@ SkipRow:
 
     MsgBox "分類データの貼り付けが完了しました！", vbInformation, "完了"
 End Sub
-
 Sub 一括日報処理()
     Call 更新と精度向上したタイトル識別
     Call 分類データ貼り付け
