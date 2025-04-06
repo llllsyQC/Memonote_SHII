@@ -1,0 +1,119 @@
+Sub 更新と精度向上したタイトル識別()
+    Dim Wb1 As Workbook, Wb2 As Workbook
+    Dim fileName As String, filePath As String
+    Dim userDate As String
+    Dim wsSource As Worksheet, wsTarget As Worksheet
+    Dim lastRow As Long, i As Long
+    Dim titleFound As Boolean
+    Dim titleText As String
+    Dim shiftType As String
+    Dim timeValue As String
+    Dim actualTime As Variant
+
+    ' 1. ユーザーに日報の日付を入力させる
+    userDate = InputBox("日報の日付を入力してください (フォーマット: YYYYMMDD)", "日付入力")
+
+    ' グローバル変数に保存
+    reportDate = userDate
+
+    ' 2. 入力の検証
+    If userDate = "" Or Not IsNumeric(userDate) Or Len(userDate) <> 8 Then
+        MsgBox "有効な日付を入力してください (フォーマット: YYYYMMDD)", vbExclamation, "エラー"
+        Exit Sub
+    End If
+
+    ' 3. 日報ファイルのパスを生成
+    fileName = "大宮日報" & userDate & ".xlsx"
+    filePath = "C:\Users\lis105\Desktop\06. 日報\" & fileName
+
+    ' 4. ファイルの存在を確認
+    If Dir(filePath) = "" Then
+        MsgBox "ファイルが見つかりません: " & fileName, vbCritical, "エラー"
+        Exit Sub
+    End If
+
+    ' 5. 同名の開いている日報ファイルを閉じる
+    On Error Resume Next
+    Workbooks(fileName).Close False
+    On Error GoTo 0
+
+    ' 6. 日報ファイルを開く
+    Set Wb2 = Workbooks.Open(filePath)
+
+    ' 7. "日報" ワークシートを取得
+    On Error Resume Next
+    Set wsSource = Wb2.Worksheets("日報")
+    On Error GoTo 0
+    If wsSource Is Nothing Then
+        MsgBox "対象ワークシート '日報' が " & fileName & " に存在しません", vbCritical, "エラー"
+        Wb2.Close False
+        Exit Sub
+    End If
+
+    ' 8. 現在のブックに "日報転記" シートを取得
+    Set Wb1 = ThisWorkbook
+    On Error Resume Next
+    Set wsTarget = Wb1.Worksheets("日報転記")
+    If wsTarget Is Nothing Then
+        Set wsTarget = Wb1.Sheets.Add
+        wsTarget.Name = "日報転記"
+    End If
+    On Error GoTo 0
+
+    ' 9. "日報転記" の旧データをクリア
+    wsTarget.Cells.Clear
+
+    ' 10. "日報" の35行目以降のすべての内容をコピー
+    lastRow = wsSource.Cells(wsSource.Rows.Count, "B").End(xlUp).Row
+    wsSource.Rows("35:" & lastRow).Copy
+    wsTarget.Range("A1").PasteSpecial Paste:=xlPasteValues
+
+    ' 11. 日報ファイルを閉じる
+    Wb2.Close False
+
+    ' 12. データの最終行を再取得
+    lastRow = wsTarget.Cells(wsTarget.Rows.Count, "B").End(xlUp).Row
+
+    ' 13. B列のフォーマット修正 (数値化防止)
+    wsTarget.Columns("B").NumberFormat = "@"
+
+    ' 14. "日報転記" を走査し、【】形式のタイトルを検索し、シフト情報とともにコピー
+    Debug.Print "===================="
+    Debug.Print "日報ファイル: " & fileName
+    Debug.Print "タイトル行の識別結果:"
+
+    For i = 1 To lastRow
+        titleFound = False
+        titleText = Trim(Replace(Replace(wsTarget.Cells(i, 4).Value, vbCr, ""), vbLf, ""))
+        If titleText Like "【*】*" Then titleFound = True
+
+        If titleFound Then
+            timeValue = Trim(CStr(wsTarget.Cells(i + 1, 2).Value))
+            actualTime = 0
+
+            If timeValue <> "" And IsNumeric(Replace(timeValue, ":", "")) Then
+                On Error Resume Next
+                actualTime = CDate(timeValue)
+                On Error GoTo 0
+            End If
+
+            If actualTime = 0 Then
+                shiftType = "不明"
+            ElseIf actualTime >= 0.375 And actualTime < 0.7083 Then
+                shiftType = "日"
+            Else
+                shiftType = "夜"
+            End If
+
+            wsTarget.Cells(i, 39).Value = shiftType
+            wsTarget.Range(wsTarget.Cells(i, 4), wsTarget.Cells(i, 38)).Copy
+            wsTarget.Cells(i, 40).PasteSpecial Paste:=xlPasteValues
+            Debug.Print "行: " & i & " -> " & shiftType & " | " & titleText
+        End If
+    Next i
+
+    wsTarget.Range("AO:BG").Delete Shift:=xlToLeft
+
+    Debug.Print "===================="
+    MsgBox "タイトルの識別、シフト判定、列調整が完了しました！", vbInformation, "完了"
+End Sub
