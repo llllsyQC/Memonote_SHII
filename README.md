@@ -1,7 +1,13 @@
-Sub 工数集計貼り付け_テスト版()
+Sub 一括日報処理()
+    Call 更新と精度向上したタイトル識別
+    Call 分類データ貼り付け
+    Call 工数集計貼り付け ' ✅ 新增这一行
+End Sub
+
+
+Sub 工数集計貼り付け()
 
     Dim reportDate As String
-    Dim userInput As String
     Dim yyyyMM As String
     Dim filePath As String
     Dim targetWb As Workbook
@@ -24,18 +30,19 @@ Sub 工数集計貼り付け_テスト版()
     Dim i As Long, j As Long
     Dim clearDayColStart As Long
 
-    ' ✅ 1. 日付入力（独立用）
-    userInput = InputBox("日報の日付を入力してください（フォーマット: YYYYMMDD）", "日付入力")
-    If userInput = "" Or Not IsNumeric(userInput) Or Len(userInput) <> 8 Then
-        MsgBox "有効な日付を入力してください（例：20241229）", vbExclamation
+    ' ✅ reportDate（名称変数）取得
+    On Error Resume Next
+    reportDate = Evaluate(ThisWorkbook.Names("reportDate").RefersTo)
+    On Error GoTo 0
+
+    If reportDate = "" Then
+        MsgBox "日付が取得できません。先にタイトル識別処理を実行してください。", vbExclamation
         Exit Sub
     End If
 
-    reportDate = userInput
     yyyyMM = Left(reportDate, 6)
     filePath = "C:\Users\lis105\Desktop\06. 日報\④工数集計_日報_" & yyyyMM & ".xlsx"
 
-    ' ✅ 2. ファイルチェック
     If Dir(filePath) = "" Then
         MsgBox "集計先ファイルが見つかりません：" & vbCrLf & filePath, vbCritical
         Exit Sub
@@ -44,17 +51,15 @@ Sub 工数集計貼り付け_テスト版()
     Set targetWb = Workbooks.Open(filePath)
     Set targetWs = targetWb.Sheets("日報")
 
-    ' ✅ 3. カテゴリ定義
     categorySheets = Array("顧客対応", "障害対応", "その他", "KIX11業務")
     categoryCodes = Array("客", "害", "他", "K")
 
-    ' ✅ 4. 各カテゴリ処理
     For i = LBound(categorySheets) To UBound(categorySheets)
         Set sourceWs = ThisWorkbook.Sheets(categorySheets(i))
         Set dict = CreateObject("Scripting.Dictionary")
         lastRow = sourceWs.Cells(sourceWs.Rows.Count, "A").End(xlUp).Row
 
-        ' ✅ 先に該当日・カテゴリ列をクリア（F〜O列基準で10列分）
+        ' ✅ 対象日データの事前クリア
         clearDayColStart = (CLng(reportDate) Mod 100 - 1) * 10 + 6
 
         For j = 0 To 9
@@ -65,7 +70,7 @@ Sub 工数集計貼り付け_テスト版()
             Next targetRow
         Next j
 
-        ' ✅ 5. データ読み込みと集計
+        ' ✅ データ集計
         For r = 2 To lastRow
             If Trim(sourceWs.Cells(r, 1).Value) <> "" And Trim(sourceWs.Cells(r, 2).Value) <> "" Then
                 If IsNumeric(sourceWs.Cells(r, 1).Value) Then
@@ -90,7 +95,7 @@ Sub 工数集計貼り付け_テスト版()
 SkipRow:
         Next r
 
-        ' ✅ 6. 結果を貼り付け
+        ' ✅ 集計結果を書き込み
         For Each dictKey In dict.Keys
             parts = Split(dictKey, "_")
             If UBound(parts) < 2 Then GoTo SkipKey
@@ -132,8 +137,6 @@ SkipKey:
     Next i
 
     MsgBox "✅ 工数の集計・転記が完了しました！", vbInformation
-
-    ' （必要に応じて保存・閉じる）
     ' targetWb.Save
     ' targetWb.Close
 
