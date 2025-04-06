@@ -1,10 +1,3 @@
-Sub 一括日報処理()
-    Call 更新と精度向上したタイトル識別
-    Call 分類データ貼り付け
-    Call 工数集計貼り付け ' ✅ 新增这一行
-End Sub
-
-
 Sub 工数集計貼り付け()
 
     Dim reportDate As String
@@ -141,3 +134,10 @@ SkipKey:
     ' targetWb.Close
 
 End Sub
+Sub 一括日報処理()
+    Call 更新と精度向上したタイトル識別
+    Call 分類データ貼り付け
+    Call 工数集計貼り付け ' ✅ 新增这一行
+End Sub
+
+
