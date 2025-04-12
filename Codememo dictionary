@@ -1,14 +1,4 @@
-Sub 実行_工数番号と日別工数貼付()
-
-    Call Copy_WorkHours_By工数番号
-    Call 実行_InteriorColor貼付
-
-    MsgBox "Step 2 完了！工数番号貼付＋日別色判断貼付が完了しました", vbInformation
-
-End Sub
-
-
-Sub Copy_WorkHours_By工数番号()
+Sub Copy_WorkHours_By工数番号_正確版()
 
     Dim wsSrc As Worksheet, wsDest As Worksheet
     Dim 工数Map As Object
@@ -20,20 +10,21 @@ Sub Copy_WorkHours_By工数番号()
     Set wsDest = ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
     Set 工数Map = CreateObject("Scripting.Dictionary")
 
-    ' 工数番号マッピング
-    For destRow = 2 To wsDest.Cells(wsDest.Rows.Count, "E").End(xlUp).Row
-        工数番号 = Trim(CStr(wsDest.Cells(destRow, "E").Value))
+    ' Step 1：建立目标Sheet（都度対応）の工数番号 → 行映射（I11:I64）
+    For destRow = 11 To 64
+        工数番号 = Trim(CStr(wsDest.Cells(destRow, "I").Value))
         If 工数番号 <> "" Then
             工数Map(工数番号) = destRow
         End If
     Next
 
-    ' 工数番号に基づいて貼付
-    For srcRow = 2 To wsSrc.Cells(wsSrc.Rows.Count, "E").End(xlUp).Row
+    ' Step 2：从源表（0消）读取工数番号（E6:E52）
+    For srcRow = 6 To 52
         工数番号 = Trim(CStr(wsSrc.Cells(srcRow, "E").Value))
         If 工数Map.exists(工数番号) Then
             destRow = 工数Map(工数番号)
             matchCount = matchCount + 1
+            ' 复制数据 F列(6) ～ EH列(138)
             For col = 6 To 138
                 With wsDest.Cells(destRow, col)
                     .NumberFormat = "h:mm"
@@ -43,37 +34,6 @@ Sub Copy_WorkHours_By工数番号()
         End If
     Next
 
-End Sub
-
-
-Sub 実行_InteriorColor貼付()
-    Dim i As Integer
-    For i = 0 To 30
-        Call InteriorColor貼付(i)
-    Next i
-End Sub
-
-
-Sub InteriorColor貼付(i As Integer)
-
-    Dim ws1 As Worksheet
-    Dim ws2 As Worksheet
-
-    Set ws1 = ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
-    Set ws2 = ThisWorkbook.Worksheets("0消し(最終)")
-
-    On Error Resume Next
-
-    ' 休日（背景色なし）→ 貼付到休日列
-    If ws1.Cells(11, 4 * i + 15).DisplayFormat.Interior.ColorIndex = xlNone Then
-        ws2.Range(ws2.Cells(6, 2 * i + 6), ws2.Cells(52, 2 * i + 7)).Copy
-        ws1.Cells(11, 4 * i + 17).PasteSpecial Paste:=xlPasteValues
-    ' 平日（灰色）→ 貼付到平日列
-    Else
-        ws2.Range(ws2.Cells(6, 2 * i + 6), ws2.Cells(52, 2 * i + 7)).Copy
-        ws1.Cells(11, 4 * i + 15).PasteSpecial Paste:=xlPasteValues
-    End If
-
-    On Error GoTo 0
+    MsgBox "Step 2（正確版）完了！一致件数: " & matchCount, vbInformation
 
 End Sub
