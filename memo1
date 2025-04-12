@@ -1,0 +1,67 @@
+Sub Test_Import_AllSources()
+
+    Dim 年 As String, 月 As String, yyyymm As String
+    年 = InputBox("【年】を入力してください（例：2025）")
+    月 = InputBox("【月】を入力してください（例：04）")
+
+    If 年 = "" Or 月 = "" Then
+        MsgBox "年と月の入力が必要です。": Exit Sub
+    End If
+
+    yyyymm = 年 & 月
+
+    Dim pathDaily As String
+    pathDaily = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06.日報\06.50定時_工数集計\"
+
+    Dim fileName1 As String, fileName2 As String, fileName4 As String
+    Dim wb1 As Workbook, wb2 As Workbook, wb4 As Workbook
+
+    ' ① 定時作業チェックシート
+    fileName1 = Dir(pathDaily & "①工数集計_定時作業チェックシート_*_" & yyyymm & ".xlsx")
+    If fileName1 <> "" Then
+        Set wb1 = Workbooks.Open(pathDaily & fileName1)
+        With wb1.Worksheets("定時作業工数集計")
+            .Columns.Hidden = False
+            .Rows.Hidden = False
+        End With
+        ActiveWindow.FreezePanes = False
+        wb1.Worksheets("定時作業工数集計").Range("M4:AQ49").Copy
+        ThisWorkbook.Worksheets("定（日）").Range("B3").PasteSpecial xlPasteValues
+        wb1.Worksheets("定時作業工数集計").Range("M51:AQ96").Copy
+        ThisWorkbook.Worksheets("定（夜）").Range("B3").PasteSpecial xlPasteValues
+        wb1.Close False
+    Else
+        MsgBox "①ファイルが見つかりません", vbExclamation
+    End If
+
+    ' ② 定時外
+    fileName2 = Dir(pathDaily & "②工数集計_定時外_*_" & yyyymm & ".xlsx")
+    If fileName2 <> "" Then
+        Set wb2 = Workbooks.Open(pathDaily & fileName2)
+        wb2.Worksheets("0集計シート").Range("B4:F50").Copy
+        ThisWorkbook.Worksheets("定時外").Range("F7").PasteSpecial xlPasteValues
+        wb2.Close False
+    Else
+        MsgBox "②ファイルが見つかりません", vbExclamation
+    End If
+
+    ' ④ 日報
+    fileName4 = Dir(pathDaily & "④工数集計_日報_*_" & yyyymm & ".xlsx")
+    If fileName4 <> "" Then
+        Set wb4 = Workbooks.Open(pathDaily & fileName4)
+        wb4.Worksheets("日報").Range("F7:LC53").Copy
+        ThisWorkbook.Worksheets("日報").Range("F7").PasteSpecial xlPasteValues
+        wb4.Close False
+    Else
+        MsgBox "④ファイルが見つかりません", vbExclamation
+    End If
+
+    ' 年月を書き込む
+    With ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
+        .Range("I5").Value = 年
+        .Range("I8").Value = 月
+    End With
+
+    MsgBox "Step 1 完了！ファイル読込と貼付成功", vbInformation
+
+End Sub
