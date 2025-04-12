@@ -1,23 +1,36 @@
-'①工数集計_定時作業チェックシート_yyyymm.xlsx を開く
-fileName1 = Dir(pathDaily & "①工数集計_定時作業チェックシート_*" & yyyymm & ".xlsx")
-If fileName1 <> "" Then
-    Set wb1 = Workbooks.Open(pathDaily & fileName1)
-    With wb1.Worksheets("定時作業工数集計")
-        .Activate
-        .Range("A1").Select
-        If wb1.Windows.Count > 0 Then
-            wb1.Windows(1).FreezePanes = False
+Sub Copy_WorkHours_By工数番号()
+
+    Dim wsSrc As Worksheet, wsDest As Worksheet
+    Dim 工数Map As Object
+    Dim srcRow As Long, destRow As Long, col As Long
+    Dim 工数番号 As Variant
+
+    Set wsSrc = ThisWorkbook.Worksheets("0消し(最終)")
+    Set wsDest = ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
+    Set 工数Map = CreateObject("Scripting.Dictionary")
+
+    ' Step 1：将目标Sheet的工数番号建立映射（E列）
+    For destRow = 2 To wsDest.Cells(wsDest.Rows.Count, "E").End(xlUp).Row
+        工数番号 = wsDest.Cells(destRow, "E").Value
+        If 工数番号 <> "" Then
+            工数Map(工数番号) = destRow
         End If
-        .Columns.Hidden = False
-        .Rows.Hidden = False
-        .Range("M4:AQ49").Copy
-    End With
-    ThisWorkbook.Worksheets("定（日）").Range("B3").PasteSpecial xlPasteValues
+    Next
 
-    wb1.Worksheets("定時作業工数集計").Range("M51:AQ96").Copy
-    ThisWorkbook.Worksheets("定（夜）").Range("B3").PasteSpecial xlPasteValues
+    ' Step 2：从源Sheet读取数据，并复制到目标Sheet对应工数番号
+    For srcRow = 2 To wsSrc.Cells(wsSrc.Rows.Count, "E").End(xlUp).Row
+        工数番号 = wsSrc.Cells(srcRow, "E").Value
+        If 工数Map.exists(工数番号) Then
+            destRow = 工数Map(工数番号)
+            For col = 6 To 138 ' F列(O=15) ~ EH列=138
+                With wsDest.Cells(destRow, col)
+                    .NumberFormat = "h:mm"
+                    .Value = wsSrc.Cells(srcRow, col).Value
+                End With
+            Next col
+        End If
+    Next
 
-    wb1.Close False
-Else
-    MsgBox "①ファイルが見つかりません", vbExclamation
-End If
+    MsgBox "Step 2 完了！0消しデータを工数番号で貼付しました", vbInformation
+
+End Sub
