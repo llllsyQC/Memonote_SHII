@@ -1,17 +1,33 @@
-Sub 工数番号貼付_背景色判定_最終統合版()
+'===========================
+' モジュール：工数番号貼付処理
+'===========================
+
+Sub 工数番号データ_貼付_＋_平日休日調整_統合版()
+
+    Call Copy_WorkHours_By工数番号_起点O11版
+    Call 実行_InteriorColor貼付
+
+    MsgBox "工数番号データを貼付し、背景色に応じて調整しました。", vbInformation
+
+End Sub
+
+
+Private Sub Copy_WorkHours_By工数番号_起点O11版()
 
     Dim wsSrc As Worksheet, wsDest As Worksheet
     Dim 工数Map As Object
     Dim srcRow As Long, destRow As Long, i As Long
     Dim 工数番号 As String
     Dim matchCount As Long
-    Dim dayColStart As Long, pasteCol As Long
+    Dim colCount As Long
 
     Set wsSrc = ThisWorkbook.Worksheets("0消し(最終)")
     Set wsDest = ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
     Set 工数Map = CreateObject("Scripting.Dictionary")
 
-    ' Step 1：建立 工数番号 → 対応行号 的映射（I11:I64）
+    colCount = 138 - 6 + 1 ' F列(6) ～ EH列(138)
+
+    ' 工数番号 → 行番号マッピング（I11:I64）
     For destRow = 11 To 64
         工数番号 = Trim(CStr(wsDest.Cells(destRow, "I").Value))
         If 工数番号 <> "" Then
@@ -19,31 +35,66 @@ Sub 工数番号貼付_背景色判定_最終統合版()
         End If
     Next
 
-    ' Step 2：针对每天，判断颜色并贴对应列（共31天）
-    For i = 0 To 30
-        dayColStart = 2 * i + 6 ' 在 0消し → 每天2列，起点 F=6
-        If ws1.Cells(11, 4 * i + 15).DisplayFormat.Interior.ColorIndex = xlNone Then
-            pasteCol = 4 * i + 17 ' 休日 → 右側列
-        Else
-            pasteCol = 4 * i + 15 ' 平日 → 左側列
+    ' 各行を対応行にO列から貼付
+    For srcRow = 6 To 52
+        工数番号 = Trim(CStr(wsSrc.Cells(srcRow, "E").Value))
+        If 工数Map.exists(工数番号) Then
+            destRow = 工数Map(工数番号)
+            matchCount = matchCount + 1
+            For i = 0 To colCount - 1
+                With wsDest.Cells(destRow, 15 + i) ' O列=15
+                    .NumberFormat = "h:mm"
+                    .Value = wsSrc.Cells(srcRow, 6 + i).Value ' F列=6
+                End With
+            Next i
         End If
+    Next
 
-        ' 逐个工数番号对应行复制贴入
-        For srcRow = 6 To 52
-            工数番号 = Trim(CStr(wsSrc.Cells(srcRow, "E").Value))
-            If 工数Map.exists(工数番号) Then
-                destRow = 工数Map(工数番号)
-                wsDest.Cells(destRow, pasteCol).NumberFormat = "h:mm"
-                wsDest.Cells(destRow, pasteCol).Value = wsSrc.Cells(srcRow, dayColStart).Value
+End Sub
 
-                wsDest.Cells(destRow, pasteCol + 1).NumberFormat = "h:mm"
-                wsDest.Cells(destRow, pasteCol + 1).Value = wsSrc.Cells(srcRow, dayColStart + 1).Value
 
-                matchCount = matchCount + 1
-            End If
-        Next srcRow
+Private Sub 実行_InteriorColor貼付()
+
+    Dim i As Integer
+    For i = 0 To 30
+        Call InteriorColor貼付(i)
     Next i
 
-    MsgBox "工数番号＋背景色貼付完了：" & matchCount & " 件", vbInformation
+End Sub
+
+
+Private Sub InteriorColor貼付(i As Integer)
+
+    Dim ws1 As Worksheet, ws2 As Worksheet
+    Dim r As Long, pasteCol As Long, srcCol As Long
+    Dim colorIndex As Variant
+
+    Set ws1 = ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
+    Set ws2 = ThisWorkbook.Worksheets("0消し(最終)")
+
+    On Error Resume Next
+
+    colorIndex = ws1.Cells(11, 4 * i + 15).DisplayFormat.Interior.ColorIndex
+
+    If colorIndex = xlNone Or IsEmpty(colorIndex) Then
+        ' 休日（無色）→ 右側列
+        pasteCol = 4 * i + 17
+    Else
+        ' 平日（灰色等）→ 左側列
+        pasteCol = 4 * i + 15
+    End If
+
+    srcCol = 2 * i + 6 ' F列起点，每日2列
+
+    ' 逐行貼付（共通行範囲：6〜52 → 貼付先為11〜64）
+    For r = 6 To 52
+        ws1.Cells(r + 5, pasteCol).NumberFormat = "h:mm"
+        ws1.Cells(r + 5, pasteCol).Value = ws2.Cells(r, srcCol).Value
+
+        ws1.Cells(r + 5, pasteCol + 1).NumberFormat = "h:mm"
+        ws1.Cells(r + 5, pasteCol + 1).Value = ws2.Cells(r, srcCol + 1).Value
+    Next r
+
+    On Error GoTo 0
 
 End Sub
