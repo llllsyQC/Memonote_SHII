@@ -18,7 +18,9 @@ Sub 工数集計_自動処理()
 
 End Sub
 
-
+'---------------------------------------------
+' Step 1: ファイル読込＋各シートへ転記
+'---------------------------------------------
 Sub Import_AllSources(yyyymm As String, 年 As String, 月 As String)
 
     Dim pathDaily As String
@@ -61,7 +63,6 @@ Sub Import_AllSources(yyyymm As String, 年 As String, 月 As String)
         wb4.Close False
     End If
 
-    ' 年月を工数取得シートに記入
     With ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
         .Range("I5").Value = 年
         .Range("I8").Value = 月
@@ -69,7 +70,9 @@ Sub Import_AllSources(yyyymm As String, 年 As String, 月 As String)
 
 End Sub
 
-
+'---------------------------------------------
+' Step 2: 0消し → 工数取得(都度対応)
+'---------------------------------------------
 Sub Copy_WorkHours_By工数番号()
 
     Dim wsSrc As Worksheet, wsDest As Worksheet
@@ -101,21 +104,28 @@ Sub Copy_WorkHours_By工数番号()
 
 End Sub
 
-
+'---------------------------------------------
+' Step 3: 保存 月次工数集計シート
+'---------------------------------------------
 Sub Save_As_月次集計ファイル(yyyymm As String)
 
     Dim pathSave As String
+    Dim alertState As Boolean
+    alertState = Application.DisplayAlerts
+
     pathSave = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\14.定例会\編集用資料\【原紙】\集計シート\作成済\"
 
     Application.DisplayAlerts = False
     ThisWorkbook.SaveAs Filename:=pathSave & "月次工数集計シート" & yyyymm & ".xlsm", FileFormat:=xlOpenXMLWorkbookMacroEnabled
-    Application.DisplayAlerts = True
+    Application.DisplayAlerts = alertState
 
     MsgBox "月次工数集計シートを保存しました：" & yyyymm
 
 End Sub
 
-
+'---------------------------------------------
+' Step 4〜12: Ver5.2 処理 & 稼働率計算
+'---------------------------------------------
 Sub Process_Ver52(yyyymm As String, 年 As String, 月 As String)
 
     Dim wbVer52 As Workbook, wbSource As Workbook
@@ -124,6 +134,7 @@ Sub Process_Ver52(yyyymm As String, 年 As String, 月 As String)
     Dim fileNameSource As String, saveName As String
     Dim answer As VbMsgBoxResult
     Dim r As Long, c As Long
+    Dim alertStatus As Boolean
 
     pathVer52 = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\14.定例会\編集用資料\【原紙】\IDCF工数提出用マクロファイル\"
     pathTemplate = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\14.定例会\編集用資料\【原紙】\集計シート\"
@@ -142,14 +153,13 @@ Sub Process_Ver52(yyyymm As String, 年 As String, 月 As String)
     Set wsSource = wbSource.Worksheets("工数取得-都度対応項目(時間)")
 
     For r = 1 To 54
-        For c = 15 To 138  ' O〜EH
+        For c = 15 To 138
             With wsTarget.Cells(r + 12, c)
                 .NumberFormat = "h:mm"
                 .Value = wsSource.Cells(r + 10, c).Value
             End With
         Next c
     Next r
-
     wbSource.Close False
 
     answer = MsgBox("OJT社員が定時外工数へ入力済みですか？", vbYesNo + vbQuestion)
@@ -161,15 +171,18 @@ Sub Process_Ver52(yyyymm As String, 年 As String, 月 As String)
     End If
 
     saveName = "工数取得ver.5.2（大宮）" & Mid(yyyymm, 3, 4) & ".xlsm"
+    alertStatus = Application.DisplayAlerts
     Application.DisplayAlerts = False
     wbVer52.SaveAs pathSave & saveName, xlOpenXMLWorkbookMacroEnabled
-    Application.DisplayAlerts = True
+    Application.DisplayAlerts = alertStatus
 
     MsgBox "Ver5.2 ファイル保存完了：" & saveName
 
 End Sub
 
-
+'---------------------------------------------
+' 勤務表 + 残業表 + 稼働率
+'---------------------------------------------
 Sub FillAdditionalData(yyyymm As String, 年 As String)
 
     Dim wbTarget As Workbook, wsTarget As Worksheet
@@ -213,7 +226,6 @@ Sub FillAdditionalData(yyyymm As String, 年 As String)
     MsgBox msgText, vbInformation, "稼働率確認"
 
 End Sub
-
 
 Function GetMinutes(timeVal As Variant) As Double
     If IsDate(timeVal) Then
