@@ -1,40 +1,49 @@
-Sub Copy_WorkHours_By工数番号()
+Sub 工数番号貼付_背景色判定_最終統合版()
 
     Dim wsSrc As Worksheet, wsDest As Worksheet
     Dim 工数Map As Object
-    Dim srcRow As Long, destRow As Long, col As Long
+    Dim srcRow As Long, destRow As Long, i As Long
     Dim 工数番号 As String
     Dim matchCount As Long
+    Dim dayColStart As Long, pasteCol As Long
 
     Set wsSrc = ThisWorkbook.Worksheets("0消し(最終)")
     Set wsDest = ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
     Set 工数Map = CreateObject("Scripting.Dictionary")
 
-    ' Step 1：构建“目标Sheet”的 工数番号 → 实际行号 的映射（I11:I64）
+    ' Step 1：建立 工数番号 → 対応行号 的映射（I11:I64）
     For destRow = 11 To 64
         工数番号 = Trim(CStr(wsDest.Cells(destRow, "I").Value))
         If 工数番号 <> "" Then
-            工数Map(工数番号) = destRow ' → 保留真实行号
+            工数Map(工数番号) = destRow
         End If
     Next
 
-    ' Step 2：从源Sheet中读取 工数番号（E6:E52），去目标Sheet中寻找对应行
-    For srcRow = 6 To 52
-        工数番号 = Trim(CStr(wsSrc.Cells(srcRow, "E").Value))
-        If 工数Map.exists(工数番号) Then
-            destRow = 工数Map(工数番号) ' → 使用真实目标行
-            matchCount = matchCount + 1
-            For col = 6 To 138 ' F:EH列
-                With wsDest.Cells(destRow, col)
-                    .NumberFormat = "h:mm"
-                    .Value = wsSrc.Cells(srcRow, col).Value
-                End With
-            Next col
+    ' Step 2：针对每天，判断颜色并贴对应列（共31天）
+    For i = 0 To 30
+        dayColStart = 2 * i + 6 ' 在 0消し → 每天2列，起点 F=6
+        If ws1.Cells(11, 4 * i + 15).DisplayFormat.Interior.ColorIndex = xlNone Then
+            pasteCol = 4 * i + 17 ' 休日 → 右側列
         Else
-            Debug.Print "未匹配工数番号: " & 工数番号
+            pasteCol = 4 * i + 15 ' 平日 → 左側列
         End If
-    Next
 
-    MsgBox "Step 2 完了！正確貼付成功：" & matchCount & " 件", vbInformation
+        ' 逐个工数番号对应行复制贴入
+        For srcRow = 6 To 52
+            工数番号 = Trim(CStr(wsSrc.Cells(srcRow, "E").Value))
+            If 工数Map.exists(工数番号) Then
+                destRow = 工数Map(工数番号)
+                wsDest.Cells(destRow, pasteCol).NumberFormat = "h:mm"
+                wsDest.Cells(destRow, pasteCol).Value = wsSrc.Cells(srcRow, dayColStart).Value
+
+                wsDest.Cells(destRow, pasteCol + 1).NumberFormat = "h:mm"
+                wsDest.Cells(destRow, pasteCol + 1).Value = wsSrc.Cells(srcRow, dayColStart + 1).Value
+
+                matchCount = matchCount + 1
+            End If
+        Next srcRow
+    Next i
+
+    MsgBox "工数番号＋背景色貼付完了：" & matchCount & " 件", vbInformation
 
 End Sub
