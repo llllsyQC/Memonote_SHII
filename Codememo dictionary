@@ -3,34 +3,34 @@ Sub Copy_WorkHours_By工数番号()
     Dim wsSrc As Worksheet, wsDest As Worksheet
     Dim 工数Map As Object
     Dim srcRow As Long, destRow As Long, col As Long
-    Dim 工数番号 As Variant
+    Dim 工数番号 As String
 
     Set wsSrc = ThisWorkbook.Worksheets("0消し(最終)")
     Set wsDest = ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
     Set 工数Map = CreateObject("Scripting.Dictionary")
 
-    ' Step 1：将目标Sheet的工数番号建立映射（E列）
+    ' Step 1：工数Map建立
     For destRow = 2 To wsDest.Cells(wsDest.Rows.Count, "E").End(xlUp).Row
-        工数番号 = wsDest.Cells(destRow, "E").Value
-        If 工数番号 <> "" Then
-            工数Map(工数番号) = destRow
-        End If
+        工数番号 = Trim(CStr(wsDest.Cells(destRow, "E").Value))
+        If 工数番号 <> "" Then 工数Map(工数番号) = destRow
     Next
 
-    ' Step 2：从源Sheet读取数据，并复制到目标Sheet对应工数番号
+    ' Step 2：对比源Sheet并粘贴
     For srcRow = 2 To wsSrc.Cells(wsSrc.Rows.Count, "E").End(xlUp).Row
-        工数番号 = wsSrc.Cells(srcRow, "E").Value
+        工数番号 = Trim(CStr(wsSrc.Cells(srcRow, "E").Value))
         If 工数Map.exists(工数番号) Then
             destRow = 工数Map(工数番号)
-            For col = 6 To 138 ' F列(O=15) ~ EH列=138
+            For col = 6 To 138
                 With wsDest.Cells(destRow, col)
                     .NumberFormat = "h:mm"
                     .Value = wsSrc.Cells(srcRow, col).Value
                 End With
             Next col
+        Else
+            Debug.Print "未找到工数番号: " & 工数番号
         End If
     Next
 
-    MsgBox "Step 2 完了！0消しデータを工数番号で貼付しました", vbInformation
+    MsgBox "Step 2 完了！工数番号に基づいて貼り付けました", vbInformation
 
 End Sub
