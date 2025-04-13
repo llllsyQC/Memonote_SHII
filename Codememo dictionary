@@ -1,33 +1,20 @@
-'===========================
-' モジュール：工数番号貼付処理
-'===========================
-
-Sub 工数番号データ_貼付_＋_平日休日調整_統合版()
-
-    Call Copy_WorkHours_By工数番号_起点O11版
-    Call 実行_InteriorColor貼付
-
-    MsgBox "工数番号データを貼付し、背景色に応じて調整しました。", vbInformation
-
-End Sub
-
-
-Private Sub Copy_WorkHours_By工数番号_起点O11版()
+Sub 行マッピング_日別色判定貼付()
 
     Dim wsSrc As Worksheet, wsDest As Worksheet
     Dim 工数Map As Object
-    Dim srcRow As Long, destRow As Long, i As Long
+    Dim i As Integer, srcRow As Long
     Dim 工数番号 As String
-    Dim matchCount As Long
-    Dim colCount As Long
+    Dim destRow As Long
+    Dim dayBaseCol As Long
+    Dim colOffset As Long
+    Dim 日勤列 As Long, 夜勤列 As Long
+    Dim 日付判定セル As Range
 
     Set wsSrc = ThisWorkbook.Worksheets("0消し(最終)")
     Set wsDest = ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
     Set 工数Map = CreateObject("Scripting.Dictionary")
 
-    colCount = 138 - 6 + 1 ' F列(6) ～ EH列(138)
-
-    ' 工数番号 → 行番号マッピング（I11:I64）
+    ' Step 1: 建立 工数番号 → 行号映射（从 I11:I64）
     For destRow = 11 To 64
         工数番号 = Trim(CStr(wsDest.Cells(destRow, "I").Value))
         If 工数番号 <> "" Then
@@ -35,66 +22,51 @@ Private Sub Copy_WorkHours_By工数番号_起点O11版()
         End If
     Next
 
-    ' 各行を対応行にO列から貼付
-    For srcRow = 6 To 52
-        工数番号 = Trim(CStr(wsSrc.Cells(srcRow, "E").Value))
-        If 工数Map.exists(工数番号) Then
-            destRow = 工数Map(工数番号)
-            matchCount = matchCount + 1
-            For i = 0 To colCount - 1
-                With wsDest.Cells(destRow, 15 + i) ' O列=15
-                    .NumberFormat = "h:mm"
-                    .Value = wsSrc.Cells(srcRow, 6 + i).Value ' F列=6
-                End With
-            Next i
-        End If
-    Next
-
-End Sub
-
-
-Private Sub 実行_InteriorColor貼付()
-
-    Dim i As Integer
+    ' Step 2: 对于每一天（0~30）
     For i = 0 To 30
-        Call InteriorColor貼付(i)
+
+        ' 判断该日是平日 or 休日
+        Set 日付判定セル = wsDest.Cells(11, 4 * i + 15) ' 第一天 = O列 = 列15
+
+        If 日付判定セル.DisplayFormat.Interior.ColorIndex = xlNone Then
+            ' 休日 → 从 R/S 开始（偏移2）
+            colOffset = 2
+        Else
+            ' 平日 → 从 P/Q 开始（偏移0）
+            colOffset = 0
+        End If
+
+        ' 计算该日应粘贴的起始列
+        dayBaseCol = 4 * i + 15 + colOffset
+
+        ' 从0消中读取每个工数的数据（E6:E52）
+        For srcRow = 6 To 52
+            工数番号 = Trim(CStr(wsSrc.Cells(srcRow, "E").Value))
+
+            If 工数Map.exists(工数番号) Then
+                destRow = 工数Map(工数番号)
+
+                ' 来源列：F列=6 开始，每天2列
+                日勤列 = 2 * i + 6
+                夜勤列 = 2 * i + 7
+
+                ' 粘贴日勤数据
+                With wsDest.Cells(destRow, dayBaseCol)
+                    .NumberFormat = "h:mm"
+                    .Value = wsSrc.Cells(srcRow, 日勤列).Value
+                End With
+
+                ' 粘贴夜勤数据
+                With wsDest.Cells(destRow, dayBaseCol + 1)
+                    .NumberFormat = "h:mm"
+                    .Value = wsSrc.Cells(srcRow, 夜勤列).Value
+                End With
+
+            End If
+        Next srcRow
+
     Next i
 
-End Sub
-
-
-Private Sub InteriorColor貼付(i As Integer)
-
-    Dim ws1 As Worksheet, ws2 As Worksheet
-    Dim r As Long, pasteCol As Long, srcCol As Long
-    Dim colorIndex As Variant
-
-    Set ws1 = ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
-    Set ws2 = ThisWorkbook.Worksheets("0消し(最終)")
-
-    On Error Resume Next
-
-    colorIndex = ws1.Cells(11, 4 * i + 15).DisplayFormat.Interior.ColorIndex
-
-    If colorIndex = xlNone Or IsEmpty(colorIndex) Then
-        ' 休日（無色）→ 右側列
-        pasteCol = 4 * i + 17
-    Else
-        ' 平日（灰色等）→ 左側列
-        pasteCol = 4 * i + 15
-    End If
-
-    srcCol = 2 * i + 6 ' F列起点，每日2列
-
-    ' 逐行貼付（共通行範囲：6〜52 → 貼付先為11〜64）
-    For r = 6 To 52
-        ws1.Cells(r + 5, pasteCol).NumberFormat = "h:mm"
-        ws1.Cells(r + 5, pasteCol).Value = ws2.Cells(r, srcCol).Value
-
-        ws1.Cells(r + 5, pasteCol + 1).NumberFormat = "h:mm"
-        ws1.Cells(r + 5, pasteCol + 1).Value = ws2.Cells(r, srcCol + 1).Value
-    Next r
-
-    On Error GoTo 0
+    MsgBox "交差貼付完了！全工数番号・全日付データを処理しました。", vbInformation
 
 End Sub
