@@ -1,25 +1,19 @@
-    saveName = "工数取得ver.5.2（大宮）" & Mid(yyyymm, 3, 4) & ".xlsm"
-
-    ' 确保保存路径存在，否则创建文件夹
-    If Dir(pathSave, vbDirectory) = "" Then
-        MsgBox "保存先フォルダが存在しません：" & vbCrLf & pathSave, vbCritical
-        Exit Sub
+    If errorCount > 0 Then
+        MsgBox "15分単位でない値が " & errorCount & " 件見つかりました（赤文字表示）", vbExclamation
+    Else
+        MsgBox "すべての値が15分単位で正しく入力されています。", vbInformation
     End If
 
-    ' 保存文件
-    alertStatus = Application.DisplayAlerts
-    Application.DisplayAlerts = False
-
-    On Error GoTo SaveErr
-
-    wbVer52.SaveAs Filename:=pathSave & saveName, FileFormat:=xlOpenXMLWorkbookMacroEnabled
-
-    Application.DisplayAlerts = alertStatus
-
-    MsgBox "Ver5.2 ファイル保存完了：" & saveName, vbInformation
     Exit Sub
 
-SaveErr:
-    Application.DisplayAlerts = alertStatus
-    MsgBox "保存に失敗しました：" & Err.Description, vbCritical
+ErrorHandler:
+    MsgBox "入力チェックでエラー：" & Err.Description, vbCritical
+End Sub
+
+
+Dim checkResult As Boolean
+wbVer52.Application.Run "入力チェック"
+If checkResult = False Then
+    MsgBox "Ver5.2 に15分単位でない値があります（赤文字で表示）。", vbExclamation
+End If
 
