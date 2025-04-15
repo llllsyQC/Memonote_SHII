@@ -1,35 +1,25 @@
-Function 入力チェック() As Boolean
-    On Error GoTo ErrHandler
+    saveName = "工数取得ver.5.2（大宮）" & Mid(yyyymm, 3, 4) & ".xlsm"
 
-    Dim ws As Worksheet
-    Set ws = ThisWorkbook.Sheets("都度対応項目(時間)")
+    ' 确保保存路径存在，否则创建文件夹
+    If Dir(pathSave, vbDirectory) = "" Then
+        MsgBox "保存先フォルダが存在しません：" & vbCrLf & pathSave, vbCritical
+        Exit Sub
+    End If
 
-    Dim i As Long, x As Long
-    Dim Lrow As Long, Lcol As Long
+    ' 保存文件
+    alertStatus = Application.DisplayAlerts
+    Application.DisplayAlerts = False
 
-    ' 最后一列、最后一行
-    Lrow = ws.Cells(ws.Rows.Count, 10).End(xlUp).Row
-    Lcol = ws.Cells(6, ws.Columns.Count).End(xlToLeft).Column
+    On Error GoTo SaveErr
 
-    入力チェック = True
+    wbVer52.SaveAs Filename:=pathSave & saveName, FileFormat:=xlOpenXMLWorkbookMacroEnabled
 
-    For i = 15 To Lcol
-        For x = 10 To Lrow
-            If IsNumeric(ws.Cells(x, i).Value) Then
-                If Modulo(ws.Cells(x, i).Value, 0.25) > 0 Then
-                    ws.Cells(x, i).Font.ColorIndex = 3  ' 赤
-                    入力チェック = False
-                Else
-                    ws.Cells(x, i).Font.ColorIndex = 1  ' 黒
-                End If
-            End If
-        Next x
-    Next i
+    Application.DisplayAlerts = alertStatus
 
-    Exit Function
+    MsgBox "Ver5.2 ファイル保存完了：" & saveName, vbInformation
+    Exit Sub
 
-ErrHandler:
-    MsgBox "入力チェック中にエラーが発生しました：" & Err.Description, vbExclamation
-    入力チェック = False
-End Function
+SaveErr:
+    Application.DisplayAlerts = alertStatus
+    MsgBox "保存に失敗しました：" & Err.Description, vbCritical
 
