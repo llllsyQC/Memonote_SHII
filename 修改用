@@ -3,11 +3,9 @@ Sub 工数集計_自動処理()
     Dim 年 As String, 月 As String, yyyymm As String
     Dim msg As String
 
-    ' === 年月输入 ===
     年 = InputBox("【年】を入力してください（例：2025）")
     月 = InputBox("【月】を入力してください（例：04）")
 
-    ' === 校验 ===
     If 年 = "" Or 月 = "" Then
         MsgBox "⚠ 年と月の入力が必要です。", vbExclamation
         Exit Sub
@@ -24,17 +22,19 @@ Sub 工数集計_自動処理()
 
     yyyymm = 年 & 月
 
-    ' === 主处理 ===
     On Error GoTo ErrHandler
 
-    Call Import_AllSources(yyyymm, 年, 月)
+    ' 关键：先判断 Import 是否成功
+    If Not Import_AllSources(yyyymm, 年, 月) Then
+        Exit Sub ' 中止流程
+    End If
+
     Call Copy_WorkHours_By工数番号(yyyymm, 年, 月)
     Call Process_Ver52(yyyymm, 年, 月)
 
     MsgBox "すべての処理が正常に完了しました！", vbInformation
     Exit Sub
 
-' === 错误处理 ===
 ErrHandler:
     msg = "エラーが発生しました：" & vbCrLf & _
           "内容：" & Err.Description & vbCrLf & _
@@ -43,7 +43,10 @@ ErrHandler:
 
 End Sub
 
-Sub Import_AllSources(yyyymm, 年, 月)
+Function Import_AllSources(yyyymm As String, 年 As String, 月 As String) As Boolean
+
+    On Error GoTo ErrHandler
+    Import_AllSources = False ' 初期値（失敗）
 
     Dim pathDaily As String
     pathDaily = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06.日報\06.50 定時_工数集計\202504工数ルール改定\マクロ修正中\工数データ提出用加工"
@@ -53,62 +56,56 @@ Sub Import_AllSources(yyyymm, 年, 月)
 
     ' ① 定時チェック
     fileName1 = Dir(pathDaily & "\①工数集計_定時作業チェックシート_*" & yyyymm & "*.xlsx")
-    If fileName1 <> "" Then
-        Set wb1 = Workbooks.Open(pathDaily & "\" & fileName1)
-        wb1.Worksheets("定時作業工数詳細").Columns.EntireColumn.Hidden = False
-        wb1.Worksheets("定時作業工数詳細").Rows.EntireRow.Hidden = False
-        ActiveWindow.FreezePanes = False
-
-        ' 日勤
-        wb1.Worksheets("定時作業工数詳細").Range("M4:AQ49").Copy
-        ThisWorkbook.Worksheets("定(日)").Range("B3").PasteSpecial Paste:=xlPasteValues
-
-        ' 夜勤
-        wb1.Worksheets("定時作業工数詳細").Range("M51:AQ96").Copy
-        ThisWorkbook.Worksheets("定(夜)").Range("B3").PasteSpecial Paste:=xlPasteValues
-
-        Application.DisplayAlerts = False
-        wb1.Close
-    Else
-        MsgBox "ファイルが見つかりません：" & vbCrLf & _
-               "①工数集計_定時作業チェックシート_" & yyyymm & "（検索パス：" & pathDaily & "）", vbExclamation
-        Exit Sub
+    If fileName1 = "" Then
+        MsgBox "❌ ファイルが見つかりません：①工数集計_定時作業チェックシート_" & yyyymm, vbExclamation
+        Exit Function
     End If
+
+    Set wb1 = Workbooks.Open(pathDaily & "\" & fileName1)
+    wb1.Worksheets("定時作業工数詳細").Columns.EntireColumn.Hidden = False
+    wb1.Worksheets("定時作業工数詳細").Rows.EntireRow.Hidden = False
+    ActiveWindow.FreezePanes = False
+    wb1.Worksheets("定時作業工数詳細").Range("M4:AQ49").Copy
+    ThisWorkbook.Worksheets("定(日)").Range("B3").PasteSpecial Paste:=xlPasteValues
+    wb1.Worksheets("定時作業工数詳細").Range("M51:AQ96").Copy
+    ThisWorkbook.Worksheets("定(夜)").Range("B3").PasteSpecial Paste:=xlPasteValues
+    wb1.Close False
 
     ' ② 定時外
     fileName2 = Dir(pathDaily & "\②工数集計_定時外_*" & yyyymm & "*.xlsx")
-    If fileName2 <> "" Then
-        Set wb2 = Workbooks.Open(pathDaily & "\" & fileName2)
-        wb2.Worksheets("0集計シート").Range("F4:BO50").Copy
-        ThisWorkbook.Worksheets("定時外").Range("F7").PasteSpecial xlPasteValues
-        wb2.Close False
-    Else
-        MsgBox "ファイルが見つかりません：" & vbCrLf & _
-               "②工数集計_定時外_" & yyyymm & "（検索パス：" & pathDaily & "）", vbExclamation
-        Exit Sub
+    If fileName2 = "" Then
+        MsgBox "❌ ファイルが見つかりません：②工数集計_定時外_" & yyyymm, vbExclamation
+        Exit Function
     End If
+    Set wb2 = Workbooks.Open(pathDaily & "\" & fileName2)
+    wb2.Worksheets("0集計シート").Range("F4:BO50").Copy
+    ThisWorkbook.Worksheets("定時外").Range("F7").PasteSpecial xlPasteValues
+    wb2.Close False
 
     ' ④ 日報
     fileName4 = Dir(pathDaily & "\④工数集計_日報_*" & yyyymm & "*.xlsx")
-    If fileName4 <> "" Then
-        Set wb4 = Workbooks.Open(pathDaily & "\" & fileName4)
-        wb4.Worksheets("日報").Range("F7:LC53").Copy
-        ThisWorkbook.Worksheets("日報").Range("F7").PasteSpecial xlPasteValues
-        wb4.Close False
-    Else
-        MsgBox "ファイルが見つかりません：" & vbCrLf & _
-               "④工数集計_日報_" & yyyymm & "（検索パス：" & pathDaily & "）", vbExclamation
-        Exit Sub
+    If fileName4 = "" Then
+        MsgBox "❌ ファイルが見つかりません：④工数集計_日報_" & yyyymm, vbExclamation
+        Exit Function
     End If
+    Set wb4 = Workbooks.Open(pathDaily & "\" & fileName4)
+    wb4.Worksheets("日報").Range("F7:LC53").Copy
+    ThisWorkbook.Worksheets("日報").Range("F7").PasteSpecial xlPasteValues
+    wb4.Close False
 
-    ' 年月を書き込む
+    ' 年月写入
     With ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
         .Range("I5").Value = 年
         .Range("I8").Value = 月
     End With
 
-    MsgBox "✅ Step 1 完了：ファイル読込と貼付成功", vbInformation
+    MsgBox "✅ Step1 完了：ファイル読込と貼付成功", vbInformation
+    Import_AllSources = True
+    Exit Function
 
-End Sub
+ErrHandler:
+    MsgBox "❌ Import中にエラーが発生しました：" & Err.Description, vbCritical
+    Import_AllSources = False
 
+End Function
 
