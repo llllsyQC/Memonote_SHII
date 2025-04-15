@@ -100,3 +100,22 @@ Sub Import_AllSources(yyyymm, 年, 月, pathDaily As String)
 
 End Sub
 
+
+
+Sub パステスト()
+    Dim 年 As String, 月 As String
+    Dim path As String
+
+    年 = "2025"
+    月 = "01"
+
+    path = GetTargetFolderPath(年, 月)
+
+    MsgBox "確認用パス：" & vbCrLf & path
+
+    If Dir(path, vbDirectory) = "" Then
+        MsgBox "【NG】フォルダは存在しません：" & vbCrLf & path, vbCritical
+    Else
+        MsgBox "【OK】フォルダは見つかりました：" & vbCrLf & path, vbInformation
+    End If
+End Sub
