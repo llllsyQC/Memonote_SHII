@@ -1,19 +1,70 @@
-    If errorCount > 0 Then
-        MsgBox "15分単位でない値が " & errorCount & " 件見つかりました（赤文字表示）", vbExclamation
+Sub 勤務時間_残業_稼働率_取込()
+
+    Dim 年 As String, 月 As String, yyyymm As String
+    年 = Sheets("都度対応項目(時間)").Range("I6").Value
+    月 = Sheets("都度対応項目(時間)").Range("I7").Value
+    yyyymm = 年 & 月
+
+    Dim wbShift As Workbook, wbZangyo As Workbook
+    Dim wsTarget As Worksheet
+    Dim cell As Range
+    Dim 総勤務時間 As Double, 合計工数 As Double, 稼働率 As Double
+    Dim msgText As String
+
+    Set wsTarget = ThisWorkbook.Sheets("都度対応項目(時間)")
+
+    ' ==== 勤務割表からH10, H18 ====
+    Dim pathShift As String
+    Dim fileShift As String
+
+    pathShift = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\05.SB提出物\シフト表\99.大宮勤怠作成自動化ファイル\"
+    fileShift = Dir(pathShift & "【大宮】" & 年 & "年" & 月 & "月度勤務割表*.xlsm")
+
+    If fileShift <> "" Then
+        Set wbShift = Workbooks.Open(pathShift & fileShift)
+        For Each cell In wbShift.Sheets(1).UsedRange
+            If cell.Value = "総勤務時間" Then wsTarget.Range("H10").Value = cell.Offset(0, 1).Value
+            If cell.Value = "総平日日勤時間" Then wsTarget.Range("H18").Value = cell.Offset(0, 1).Value
+        Next
+        wbShift.Close False
     Else
-        MsgBox "すべての値が15分単位で正しく入力されています。", vbInformation
+        MsgBox "勤務割表が見つかりません", vbExclamation
     End If
 
-    Exit Sub
+    ' ==== 残業表から H14, H22 ====
+    Dim pathZan As String
+    pathZan = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\05.SB提出物\シフト表\"
 
-ErrorHandler:
-    MsgBox "入力チェックでエラー：" & Err.Description, vbCritical
+    If Dir(pathZan & "残業時間管理表_" & 年 & "年度.xlsx") <> "" Then
+        Set wbZangyo = Workbooks.Open(pathZan & "残業時間管理表_" & 年 & "年度.xlsx")
+        wsTarget.Range("H14").Value = wbZangyo.Sheets(1).Range("AL4").Value
+        wsTarget.Range("H22").Value = wbZangyo.Sheets(1).Range("AO4").Value
+        wbZangyo.Close False
+    Else
+        MsgBox "残業時間管理表が見つかりません", vbExclamation
+    End If
+
+    ' ==== 稼働率計算 ====
+    合計工数 = GetMinutes(Application.WorksheetFunction.Sum(wsTarget.Range("EP11:EP64")))
+    総勤務時間 = GetMinutes(wsTarget.Range("H10").Value)
+
+    If 総勤務時間 > 0 Then
+        稼働率 = 合計工数 / 総勤務時間
+    Else
+        稼働率 = 0
+    End If
+
+    msgText = "稼働率 = " & Format(稼働率, "0.0%") & vbCrLf & _
+              "（工数合計：" & Format(合計工数 / 60, "0.0") & " 時間 ／ 勤務時間：" & Format(総勤務時間 / 60, "0.0") & " 時間）"
+
+    MsgBox msgText, vbInformation, "稼働率確認"
+
 End Sub
 
-
-Dim checkResult As Boolean
-wbVer52.Application.Run "入力チェック"
-If checkResult = False Then
-    MsgBox "Ver5.2 に15分単位でない値があります（赤文字で表示）。", vbExclamation
-End If
-
+Function GetMinutes(timeVal As Variant) As Double
+    If IsDate(timeVal) Then
+        GetMinutes = CDbl(timeVal) * 24 * 60
+    Else
+        GetMinutes = 0
+    End If
+End Function
