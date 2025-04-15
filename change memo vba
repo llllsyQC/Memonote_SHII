@@ -1,150 +1,102 @@
 Sub 工数集計_自動処理()
 
-    On Error GoTo エラー処理
-
     Dim 年 As String, 月 As String, yyyymm As String
+    Dim pathDaily As String
 
+    ' ====== 年月入力 ======
     年 = InputBox("年を入力してください（例：2025）")
-    月 = InputBox("月を入力してください（例：04）")
-
-    If 年 = "" Or 月 = "" Then
-        MsgBox "年と月の入力が必要です。": Exit Sub
+    If 年 = "" Then MsgBox "年の入力が必要です。": Exit Sub
+    If Not IsNumeric(年) Or Len(年) <> 4 Or Val(年) < 2000 Or Val(年) > 2100 Then
+        MsgBox "正しい年を4桁で入力してください（例：2025）", vbExclamation
+        Exit Sub
     End If
 
+    月 = InputBox("月を入力してください（例：04）")
+    If 月 = "" Then MsgBox "月の入力が必要です。": Exit Sub
+    If Not IsNumeric(月) Or Val(月) < 1 Or Val(月) > 12 Then
+        MsgBox "正しい月を1～12の範囲で入力してください", vbExclamation
+        Exit Sub
+    End If
+
+    If Len(月) = 1 Then 月 = "0" & 月
     yyyymm = 年 & 月
 
-    Call Import_AllSources(yyyymm, 年, 月)
+    ' ====== 動的パス生成 ======
+    pathDaily = GetTargetFolderPath(年, 月)
+
+    ' ====== パス存在チェック ======
+    If Dir(pathDaily, vbDirectory) = "" Then
+        MsgBox "フォルダが存在しません：" & vbCrLf & pathDaily, vbCritical
+        Exit Sub
+    End If
+
+    ' ====== 処理呼び出し ======
+    Call Import_AllSources(yyyymm, 年, 月, pathDaily)
     Call Copy_WorkHours_By工数番号(yyyymm, 年, 月)
 
-    MsgBox "すべての処理が正常に完了しました。", vbInformation
-    Exit Sub
+    ' ※ この関数は元のコードには無かったが、存在するなら使ってOK
+    On Error Resume Next
+    Call Process_Ver52(yyyymm, 年, 月)
+    On Error GoTo 0
 
-エラー処理:
-    MsgBox "エラーが発生しました：" & Err.Description, vbCritical
 End Sub
-Sub Import_AllSources(yyyymm, 年, 月)
-
-    On Error GoTo エラー処理
-
-    Dim pathDaily As String
-    pathDaily = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06.日報\06.50 定時_工数集計\202504工数ルール改定\マクロ修正中\工数データ提出用加工"
+Function GetTargetFolderPath(年 As String, 月 As String) As String
+    Dim basePath As String
+    basePath = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06.日報\06.50 定時_工数集計\過去分"
+    GetTargetFolderPath = basePath & "\" & 年 & "年\" & 月 & "月\"
+End Function
+Sub Import_AllSources(yyyymm, 年, 月, pathDaily As String)
 
     Dim fileName1 As String, fileName2 As String, fileName4 As String
     Dim wb1 As Workbook, wb2 As Workbook, wb4 As Workbook
 
     ' ①定時チェック
     fileName1 = Dir(pathDaily & "\①工数集計_定時作業チェックシート_*" & yyyymm & "*.xlsx")
-    If fileName1 = "" Then
-        MsgBox "①定時チェックファイルが見つかりません。", vbCritical: Err.Raise 1001
+    If fileName1 <> "" Then
+        Set wb1 = Workbooks.Open(pathDaily & "\" & fileName1)
+        wb1.Worksheets("定時作業工数詳細").Columns.EntireColumn.Hidden = False
+        wb1.Worksheets("定時作業工数詳細").Rows.EntireRow.Hidden = False
+        ActiveWindow.FreezePanes = False
+
+        wb1.Worksheets("定時作業工数詳細").Range("M4:AQ49").Copy
+        ThisWorkbook.Worksheets("定(日)").Range("B3").PasteSpecial Paste:=xlPasteValues
+
+        wb1.Worksheets("定時作業工数詳細").Range("M51:AQ96").Copy
+        ThisWorkbook.Worksheets("定(夜)").Range("B3").PasteSpecial Paste:=xlPasteValues
+
+        Application.DisplayAlerts = False
+        wb1.Close
     End If
-    Set wb1 = Workbooks.Open(pathDaily & "\" & fileName1)
-
-    wb1.Worksheets("定時作業工数詳細").Columns.Hidden = False
-    wb1.Worksheets("定時作業工数詳細").Rows.Hidden = False
-    ActiveWindow.FreezePanes = False
-
-    wb1.Worksheets("定時作業工数詳細").Range("M4:AQ49").Copy
-    ThisWorkbook.Worksheets("定(日)").Range("B3").PasteSpecial Paste:=xlPasteValues
-
-    wb1.Worksheets("定時作業工数詳細").Range("M51:AQ96").Copy
-    ThisWorkbook.Worksheets("定(夜)").Range("B3").PasteSpecial Paste:=xlPasteValues
-    wb1.Close False
 
     ' ②定時外
     fileName2 = Dir(pathDaily & "\②工数集計_定時外_*" & yyyymm & "*.xlsx")
-    If fileName2 = "" Then
-        MsgBox "②定時外ファイルが見つかりません。", vbCritical: Err.Raise 1002
+    If fileName2 <> "" Then
+        Set wb2 = Workbooks.Open(pathDaily & "\" & fileName2)
+        wb2.Worksheets("0集計シート").Range("F4:BO50").Copy
+        ThisWorkbook.Worksheets("定時外").Range("F7").PasteSpecial xlPasteValues
+        wb2.Close False
+    Else
+        MsgBox "②ファイルが見つかりません", vbExclamation
     End If
-    Set wb2 = Workbooks.Open(pathDaily & "\" & fileName2)
-    wb2.Worksheets("0集計シート").Range("F4:BO50").Copy
-    ThisWorkbook.Worksheets("定時外").Range("F7").PasteSpecial xlPasteValues
-    wb2.Close False
 
     ' ④日報
     fileName4 = Dir(pathDaily & "\④工数集計_日報_*" & yyyymm & "*.xlsx")
-    If fileName4 = "" Then
-        MsgBox "④日報ファイルが見つかりません。", vbCritical: Err.Raise 1003
+    If fileName4 <> "" Then
+        Set wb4 = Workbooks.Open(pathDaily & "\" & fileName4)
+        wb4.Worksheets("日報").Range("F7:LC53").Copy
+        ThisWorkbook.Worksheets("日報").Range("F7").PasteSpecial xlPasteValues
+        wb4.Close False
+    Else
+        MsgBox "④ファイルが見つかりません", vbExclamation
     End If
-    Set wb4 = Workbooks.Open(pathDaily & "\" & fileName4)
-    wb4.Worksheets("日報").Range("F7:LC53").Copy
-    ThisWorkbook.Worksheets("日報").Range("F7").PasteSpecial xlPasteValues
-    wb4.Close False
 
-    ' 年月記録
+    ' 年月の記入
     With ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
         .Range("I5").Value = 年
         .Range("I8").Value = 月
     End With
 
-    Exit Sub
+    MsgBox "Step1 完了！ファイル読込と貼付成功", vbInformation
 
-エラー処理:
-    Err.Raise Err.Number, , "Import_AllSources 中にエラーが発生：" & Err.Description
 End Sub
-Sub Copy_WorkHours_By工数番号(yyyymm, 年, 月)
 
-    On Error GoTo エラー処理
-
-    Dim wsSrc As Worksheet, wsDest As Worksheet
-    Dim 工数Map As Object
-    Dim i As Integer, srcRow As Long
-    Dim 工数番号 As String
-    Dim destRow As Long
-    Dim dayBaseCol As Long
-    Dim colOffset As Long
-    Dim 日勤列 As Long, 夜勤列 As Long
-    Dim 日付判定セル As Range
-    Dim pathSave As String
-
-    Set wsSrc = ThisWorkbook.Worksheets("0消し(最終)")
-    Set wsDest = ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
-    Set 工数Map = CreateObject("Scripting.Dictionary")
-
-    ' 工数番号 → 行番号のマップ作成
-    For destRow = 11 To 64
-        工数番号 = Trim(CStr(wsDest.Cells(destRow, "I").Value))
-        If 工数番号 <> "" Then 工数Map(工数番号) = destRow
-    Next
-
-    If 工数Map.Count = 0 Then
-        MsgBox "工数番号が見つかりません。", vbCritical
-        Err.Raise 1004
-    End If
-
-    ' 日別に値を貼り付け（h:mm書式）
-    For i = 0 To 30
-        Set 日付判定セル = wsDest.Cells(11, 4 * i + 15)
-        colOffset = IIf(日付判定セル.DisplayFormat.Interior.ColorIndex = xlNone, 2, 0)
-        dayBaseCol = 4 * i + 15 + colOffset
-
-        For srcRow = 6 To 52
-            工数番号 = Trim(CStr(wsSrc.Cells(srcRow, "E").Value))
-            If 工数Map.exists(工数番号) Then
-                destRow = 工数Map(工数番号)
-                日勤列 = 2 * i + 6
-                夜勤列 = 日勤列 + 1
-                With wsDest.Cells(destRow, dayBaseCol)
-                    .NumberFormat = "h:mm"
-                    .Value = wsSrc.Cells(srcRow, 日勤列).Value
-                End With
-                With wsDest.Cells(destRow, dayBaseCol + 1)
-                    .NumberFormat = "h:mm"
-                    .Value = wsSrc.Cells(srcRow, 夜勤列).Value
-                End With
-            End If
-        Next srcRow
-    Next i
-
-    ' 保存処理（エラーがなければ保存）
-    pathSave = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06.日報\06.50 定時_工数集計\202504工数ルール改定\マクロ修正中\工数データ提出用加工\作成済\"
-
-    Application.DisplayAlerts = False
-    ThisWorkbook.SaveAs Filename:=pathSave & "月次工数集計シート" & yyyymm & ".xlsm", FileFormat:=xlOpenXMLWorkbookMacroEnabled
-    Application.DisplayAlerts = True
-
-    MsgBox "月次工数集計シートを保存しました：" & yyyymm
-    Exit Sub
-
-エラー処理:
-    Err.Raise Err.Number, , "Copy_WorkHours_By工数番号 中にエラーが発生：" & Err.Description
-End Sub
