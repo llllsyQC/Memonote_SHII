@@ -1,8 +1,8 @@
 Sub 勤務時間_残業_稼働率_取込()
 
     Dim 年 As String, 月 As String, yyyymm As String
-    年 = Sheets("都度対応項目(時間)").Range("I6").Value
-    月 = Sheets("都度対応項目(時間)").Range("I7").Value
+    年 = Trim(Sheets("都度対応項目(時間)").Range("I6").Value)
+    月 = Trim(Sheets("都度対応項目(時間)").Range("I7").Value)
     yyyymm = 年 & 月
 
     Dim wbShift As Workbook, wbZangyo As Workbook
@@ -13,36 +13,46 @@ Sub 勤務時間_残業_稼働率_取込()
 
     Set wsTarget = ThisWorkbook.Sheets("都度対応項目(時間)")
 
-    ' ==== 勤務割表からH10, H18 ====
-    Dim pathShift As String
-    Dim fileShift As String
+    ' ==== 勤務割表をユーザーが選択 ====
+    Dim filePathShift As String
+    filePathShift = Application.GetOpenFilename("Excelファイル (*.xlsm), *.xlsm", , "【大宮】勤務割表を選択してください")
 
-    pathShift = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\05.SB提出物\シフト表\99.大宮勤怠作成自動化ファイル\"
-    fileShift = Dir(pathShift & "【大宮】" & 年 & "年" & 月 & "月度勤務割表*.xlsm")
-
-    If fileShift <> "" Then
-        Set wbShift = Workbooks.Open(pathShift & fileShift)
-        For Each cell In wbShift.Sheets(1).UsedRange
-            If cell.Value = "総勤務時間" Then wsTarget.Range("H10").Value = cell.Offset(0, 1).Value
-            If cell.Value = "総平日日勤時間" Then wsTarget.Range("H18").Value = cell.Offset(0, 1).Value
-        Next
-        wbShift.Close False
-    Else
-        MsgBox "勤務割表が見つかりません", vbExclamation
+    If filePathShift = "False" Then
+        MsgBox "勤務割表が選択されませんでした。", vbExclamation
+        Exit Sub
     End If
 
-    ' ==== 残業表から H14, H22 ====
-    Dim pathZan As String
-    pathZan = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\05.SB提出物\シフト表\"
+    Set wbShift = Workbooks.Open(filePathShift)
+    For Each cell In wbShift.Sheets(1).UsedRange
+        If cell.Value = "総勤務時間" Then
+            wsTarget.Range("H10").NumberFormat = "h:mm"
+            wsTarget.Range("H10").Value = cell.Offset(0, 1).Value
+        End If
+        If cell.Value = "総平日日勤時間" Then
+            wsTarget.Range("H18").NumberFormat = "h:mm"
+            wsTarget.Range("H18").Value = cell.Offset(0, 1).Value
+        End If
+    Next
+    wbShift.Close False
 
-    If Dir(pathZan & "残業時間管理表_" & 年 & "年度.xlsx") <> "" Then
-        Set wbZangyo = Workbooks.Open(pathZan & "残業時間管理表_" & 年 & "年度.xlsx")
-        wsTarget.Range("H14").Value = wbZangyo.Sheets(1).Range("AL4").Value
-        wsTarget.Range("H22").Value = wbZangyo.Sheets(1).Range("AO4").Value
-        wbZangyo.Close False
-    Else
-        MsgBox "残業時間管理表が見つかりません", vbExclamation
+    ' ==== 残業時間表をユーザーが選択 ====
+    Dim filePathZan As String
+    filePathZan = Application.GetOpenFilename("Excelファイル (*.xlsx), *.xlsx", , "残業時間管理表を選択してください")
+
+    If filePathZan = "False" Then
+        MsgBox "残業時間管理表が選択されませんでした。", vbExclamation
+        Exit Sub
     End If
+
+    Set wbZangyo = Workbooks.Open(filePathZan)
+    With wbZangyo.Sheets(1)
+        wsTarget.Range("H14").NumberFormat = "h:mm"
+        wsTarget.Range("H14").Value = .Range("AL4").Value
+
+        wsTarget.Range("H22").NumberFormat = "h:mm"
+        wsTarget.Range("H22").Value = .Range("AO4").Value
+    End With
+    wbZangyo.Close False
 
     ' ==== 稼働率計算 ====
     合計工数 = GetMinutes(Application.WorksheetFunction.Sum(wsTarget.Range("EP11:EP64")))
@@ -54,10 +64,11 @@ Sub 勤務時間_残業_稼働率_取込()
         稼働率 = 0
     End If
 
-    msgText = "稼働率 = " & Format(稼働率, "0.0%") & vbCrLf & _
-              "（工数合計：" & Format(合計工数 / 60, "0.0") & " 時間 ／ 勤務時間：" & Format(総勤務時間 / 60, "0.0") & " 時間）"
+    msgText = "📊 稼働率 = " & Format(稼働率, "0.0%") & vbCrLf & _
+              "・工数合計（EP11:EP64）: " & Format(合計工数 / 60, "0.0") & " 時間" & vbCrLf & _
+              "・総勤務時間（H10）: " & Format(総勤務時間 / 60, "0.0") & " 時間"
 
-    MsgBox msgText, vbInformation, "稼働率確認"
+    MsgBox msgText, vbInformation, "✅ 稼働率確認完了"
 
 End Sub
 
