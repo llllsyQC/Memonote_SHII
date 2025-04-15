@@ -1,77 +1,114 @@
-For j = LBound(categoryNames) To UBound(categoryNames)
-    currentCategory = categoryNames(j)
+Sub 工数集計_自動処理()
 
-    If categoryRow.exists(currentCategory) Then
-        startRow = categoryRow(currentCategory) + 1
-        endRow = lastRow
+    Dim 年 As String, 月 As String, yyyymm As String
+    Dim msg As String
 
-        For i = startRow To lastRow
-            If categoryRow.exists(wsSource.Cells(i, 2).Value) And wsSource.Cells(i, 2).Value <> "定期巡回" Then
-                endRow = i - 1
-                Exit For
-            End If
-        Next i
+    ' === 年月输入 ===
+    年 = InputBox("【年】を入力してください（例：2025）")
+    月 = InputBox("【月】を入力してください（例：04）")
+
+    ' === 校验 ===
+    If 年 = "" Or 月 = "" Then
+        MsgBox "⚠ 年と月の入力が必要です。", vbExclamation
+        Exit Sub
+    ElseIf Not IsNumeric(年) Or Not IsNumeric(月) Then
+        MsgBox "⚠ 数字で入力してください（例：2025、04）。", vbExclamation
+        Exit Sub
+    ElseIf Len(年) <> 4 Or Len(月) <> 2 Then
+        MsgBox "⚠ 年は4桁、月は2桁で入力してください（例：2025、04）。", vbExclamation
+        Exit Sub
+    ElseIf CInt(月) < 1 Or CInt(月) > 12 Then
+        MsgBox "⚠ 月は 01 ～ 12 の範囲で入力してください。", vbExclamation
+        Exit Sub
+    End If
+
+    yyyymm = 年 & 月
+
+    ' === 主处理 ===
+    On Error GoTo ErrHandler
+
+    Call Import_AllSources(yyyymm, 年, 月)
+    Call Copy_WorkHours_By工数番号(yyyymm, 年, 月)
+    Call Process_Ver52(yyyymm, 年, 月)
+
+    MsgBox "すべての処理が正常に完了しました！", vbInformation
+    Exit Sub
+
+' === 错误处理 ===
+ErrHandler:
+    msg = "エラーが発生しました：" & vbCrLf & _
+          "内容：" & Err.Description & vbCrLf & _
+          "コード：" & Err.Number
+    MsgBox msg, vbCritical, "処理エラー"
+
+End Sub
+
+Sub Import_AllSources(yyyymm, 年, 月)
+
+    Dim pathDaily As String
+    pathDaily = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06.日報\06.50 定時_工数集計\202504工数ルール改定\マクロ修正中\工数データ提出用加工"
+
+    Dim fileName1 As String, fileName2 As String, fileName4 As String
+    Dim wb1 As Workbook, wb2 As Workbook, wb4 As Workbook
+
+    ' ① 定時チェック
+    fileName1 = Dir(pathDaily & "\①工数集計_定時作業チェックシート_*" & yyyymm & "*.xlsx")
+    If fileName1 <> "" Then
+        Set wb1 = Workbooks.Open(pathDaily & "\" & fileName1)
+        wb1.Worksheets("定時作業工数詳細").Columns.EntireColumn.Hidden = False
+        wb1.Worksheets("定時作業工数詳細").Rows.EntireRow.Hidden = False
+        ActiveWindow.FreezePanes = False
+
+        ' 日勤
+        wb1.Worksheets("定時作業工数詳細").Range("M4:AQ49").Copy
+        ThisWorkbook.Worksheets("定(日)").Range("B3").PasteSpecial Paste:=xlPasteValues
+
+        ' 夜勤
+        wb1.Worksheets("定時作業工数詳細").Range("M51:AQ96").Copy
+        ThisWorkbook.Worksheets("定(夜)").Range("B3").PasteSpecial Paste:=xlPasteValues
+
+        Application.DisplayAlerts = False
+        wb1.Close
     Else
-        startRow = 0
-        endRow = 0
+        MsgBox "ファイルが見つかりません：" & vbCrLf & _
+               "①工数集計_定時作業チェックシート_" & yyyymm & "（検索パス：" & pathDaily & "）", vbExclamation
+        Exit Sub
     End If
 
-    Set wsTarget = GetOrCreateSheet(currentCategory)
-    wsTarget.Cells.UnMerge
-
-    If Application.WorksheetFunction.CountA(wsTarget.Range("A:A")) = 0 Then
-        targetLastRow = 1
+    ' ② 定時外
+    fileName2 = Dir(pathDaily & "\②工数集計_定時外_*" & yyyymm & "*.xlsx")
+    If fileName2 <> "" Then
+        Set wb2 = Workbooks.Open(pathDaily & "\" & fileName2)
+        wb2.Worksheets("0集計シート").Range("F4:BO50").Copy
+        ThisWorkbook.Worksheets("定時外").Range("F7").PasteSpecial xlPasteValues
+        wb2.Close False
     Else
-        targetLastRow = wsTarget.Cells(wsTarget.Rows.Count, "A").End(xlUp).Row
-        If wsTarget.Cells(targetLastRow, 1).Value <> "" Then targetLastRow = targetLastRow + 1
+        MsgBox "ファイルが見つかりません：" & vbCrLf & _
+               "②工数集計_定時外_" & yyyymm & "（検索パス：" & pathDaily & "）", vbExclamation
+        Exit Sub
     End If
 
-    hasData = False
-    colStart = 39 ' AM列（工数数据开始）
-
-    If startRow > 0 And endRow >= startRow Then
-        For i = startRow To endRow
-            ' ✅ 修复1：稳定判断是否为空行
-            isEmptyRow = True
-            For Each c In wsSource.Range(wsSource.Cells(i, colStart), wsSource.Cells(i, colStart + 40))
-                If Trim(c.Value) <> "" Then
-                    isEmptyRow = False
-                    Exit For
-                End If
-            Next c
-
-            If isEmptyRow Then GoTo SkipRow
-
-            ' ✅ 修复2：稳定计算粘贴的列范围，限制最大列
-            colEnd = wsSource.Cells(i, wsSource.Columns.Count).End(xlToLeft).Column
-            If colEnd < colStart Then colEnd = colStart
-            If colEnd > colStart + 40 Then colEnd = colStart + 40
-
-            ' ✅ 粘贴数据（日期+数据）
-            wsTarget.Cells(targetLastRow, 1).Value = dateValue
-            wsSource.Range(wsSource.Cells(i, colStart), wsSource.Cells(i, colEnd)).Copy
-            wsTarget.Cells(targetLastRow, 2).PasteSpecial Paste:=xlPasteValues
-
-            targetLastRow = targetLastRow + 1
-            hasData = True
-SkipRow:
-        Next i
+    ' ④ 日報
+    fileName4 = Dir(pathDaily & "\④工数集計_日報_*" & yyyymm & "*.xlsx")
+    If fileName4 <> "" Then
+        Set wb4 = Workbooks.Open(pathDaily & "\" & fileName4)
+        wb4.Worksheets("日報").Range("F7:LC53").Copy
+        ThisWorkbook.Worksheets("日報").Range("F7").PasteSpecial xlPasteValues
+        wb4.Close False
+    Else
+        MsgBox "ファイルが見つかりません：" & vbCrLf & _
+               "④工数集計_日報_" & yyyymm & "（検索パス：" & pathDaily & "）", vbExclamation
+        Exit Sub
     End If
 
-    ' ✅ 如果没数据，只写入日期+“なし”
-    If hasData = False Then
-        wsTarget.Cells(targetLastRow, 1).Value = dateValue
-        wsTarget.Cells(targetLastRow, 3).Value = "なし"
-    End If
-Next j
+    ' 年月を書き込む
+    With ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
+        .Range("I5").Value = 年
+        .Range("I8").Value = 月
+    End With
 
-4月13日の業務についてご報告します。
-ISO仮想ウォークスルー監査に関する件で、IBM側からリアルタイム映像の事前確認日程について複数質問がありました。これを受けて、元木氏・亀氏へ確認の上、Lawrence様に対し「映像ステップに沿って進める方向で問題ない」旨を返答しました。
-また、午前中にはBrazil様からも同様の確認メールがあり、こちらも受領済みです。
+    MsgBox "✅ Step 1 完了：ファイル読込と貼付成功", vbInformation
 
-4月14日の業務についてご報告いたします。
-まず、顧客対応です。朝9時20分、Paredes様が搬出作業を開始するために来館され、9時24分に搬出作業を実施いたしました。作業完了後は、養生の撤去を確認しております。
-次に、騒音測定関連の対応として、15時45分、寿村より亀氏へのメールをCCで受信しました。A測定が実施されたとのことで、さらに別の条件でのB測定を希望する内容の見積り依頼が続いております。
-まず、訓練のシナリオに関する件で、9時41分、浜口氏より「準備作業でへの移動」との回答があり、9時56分に英訳済み修正版を提出します。
-14時以降、監視アラームの無視依頼について。一部アラートの通知が届く可能性があるとのことで、また…
+End Sub
+
 
