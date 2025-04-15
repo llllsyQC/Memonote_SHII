@@ -109,3 +109,9 @@ ErrHandler:
 
 End Function
 
+Dim checkResult As Boolean
+checkResult = wbVer52.Application.Run("入力チェック")
+
+If checkResult = False Then
+    MsgBox "Ver5.2に15分単位でない値があります（赤文字で表示されています）。", vbExclamation
+End If
