@@ -139,25 +139,39 @@ End Sub
 
 Function Check_RequiredFilesExist(yyyymm As String) As Boolean
 
+    Dim fso As Object
+    Dim folder As Object
+    Dim file As Object
     Dim pathBase As String
-    Dim file1 As String, file2 As String, file3 As String
-    Dim result As Boolean
+    Dim found1 As Boolean, found2 As Boolean, found3 As Boolean
+    Dim msg As String
 
     pathBase = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06.日報\06.50 定時_工数集計\202504工数ルール改定\マクロ修正中\工数データ提出用加工"
 
-    file1 = Dir(pathBase & "\①工数集計_定時作業チェックシート_*" & yyyymm & "*.xlsx")
-    file2 = Dir(pathBase & "\②工数集計_定時外_*" & yyyymm & "*.xlsx")
-    file3 = Dir(pathBase & "\④工数集計_日報_*" & yyyymm & "*.xlsx")
+    Set fso = CreateObject("Scripting.FileSystemObject")
 
-    ' 三つのファイルが全て存在するかチェック
-    If file1 <> "" And file2 <> "" And file3 <> "" Then
+    If Not fso.FolderExists(pathBase) Then
+        MsgBox "指定フォルダが存在しません：" & vbCrLf & pathBase, vbCritical
+        Check_RequiredFilesExist = False
+        Exit Function
+    End If
+
+    Set folder = fso.GetFolder(pathBase)
+
+    ' 遍历文件夹中的所有文件进行文件名匹配
+    For Each file In folder.Files
+        If file.Name Like "①工数集計_定時作業チェックシート_*" & yyyymm & "*.xlsx" Then found1 = True
+        If file.Name Like "②工数集計_定時外_*" & yyyymm & "*.xlsx" Then found2 = True
+        If file.Name Like "④工数集計_日報_*" & yyyymm & "*.xlsx" Then found3 = True
+    Next
+
+    If found1 And found2 And found3 Then
         Check_RequiredFilesExist = True
     Else
-        Dim msg As String
         msg = "以下のファイルが見つかりません：" & vbCrLf
-        If file1 = "" Then msg = msg & "①工数集計_定時作業チェックシート_" & yyyymm & vbCrLf
-        If file2 = "" Then msg = msg & "②工数集計_定時外_" & yyyymm & vbCrLf
-        If file3 = "" Then msg = msg & "④工数集計_日報_" & yyyymm & vbCrLf
+        If Not found1 Then msg = msg & "①工数集計_定時作業チェックシート_" & yyyymm & vbCrLf
+        If Not found2 Then msg = msg & "②工数集計_定時外_" & yyyymm & vbCrLf
+        If Not found3 Then msg = msg & "④工数集計_日報_" & yyyymm & vbCrLf
         MsgBox msg, vbExclamation, "ファイル確認エラー"
         Check_RequiredFilesExist = False
     End If
