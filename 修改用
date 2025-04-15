@@ -22,18 +22,38 @@ Sub 勤務時間_残業_稼働率_取込()
         Exit Sub
     End If
 
-    Set wbShift = Workbooks.Open(filePathShift)
-    For Each cell In wbShift.Sheets(1).UsedRange
-        If cell.Value = "総勤務時間" Then
-            wsTarget.Range("H10").NumberFormat = "h:mm"
-            wsTarget.Range("H10").Value = cell.Offset(0, 1).Value
-        End If
-        If cell.Value = "総平日日勤時間" Then
-            wsTarget.Range("H18").NumberFormat = "h:mm"
-            wsTarget.Range("H18").Value = cell.Offset(0, 1).Value
-        End If
-    Next
+        Set wbShift = Workbooks.Open(filePathShift)
+    Dim rowNum As Long, colNum As Long
+    Dim lastCol As Long
+    Dim found As Boolean
+
+    With wbShift.Sheets(1)
+        lastCol = .Cells(1, .Columns.Count).End(xlToLeft).Column
+        For rowNum = 1 To .Cells(.Rows.Count, 1).End(xlUp).Row
+            For colNum = 1 To lastCol
+                If .Cells(rowNum, colNum).Value = "総勤務時間" Then
+                    ' 从当前列开始向右找时间值
+                    For i = colNum + 1 To lastCol
+                        If IsDate(.Cells(rowNum, i).Value) Then
+                            wsTarget.Range("H10").NumberFormat = "h:mm"
+                            wsTarget.Range("H10").Value = .Cells(rowNum, i).Value
+                            Exit For
+                        End If
+                    Next i
+                ElseIf .Cells(rowNum, colNum).Value = "総平日日勤時間" Then
+                    For i = colNum + 1 To lastCol
+                        If IsDate(.Cells(rowNum, i).Value) Then
+                            wsTarget.Range("H18").NumberFormat = "h:mm"
+                            wsTarget.Range("H18").Value = .Cells(rowNum, i).Value
+                            Exit For
+                        End If
+                    Next i
+                End If
+            Next colNum
+        Next rowNum
+    End With
     wbShift.Close False
+
 
     ' ==== 残業時間表をユーザーが選択 ====
     Dim filePathZan As String
