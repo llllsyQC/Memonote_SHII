@@ -80,3 +80,17 @@ End Sub
 
 試用の際は、特に4日および6日の日報データが正しく反映されているかをご確認ください。
 なお、使用方法や手順については、xxxxxのドキュメントをご参照ください。
+
+
+' ★ 「〜」記号で始まり時間のみを取得（例：14:12~14:17 → 14:12）
+If InStr(timeValue, "〜") > 0 Then
+    timeValue = Split(timeValue, "〜")(0)
+ElseIf InStr(timeValue, "~") > 0 Then
+    timeValue = Split(timeValue, "~")(0)
+End If
+
+If timeValue <> "" Then
+    On Error Resume Next
+    actualTime = CDate(timeValue)
+    On Error GoTo 0
+End If
