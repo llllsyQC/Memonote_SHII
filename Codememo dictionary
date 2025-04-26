@@ -3,11 +3,12 @@ Sub Process_Ver52(yyyymm As String, 年 As String, 月 As String)
     Dim wsTarget As Worksheet, wsSource As Worksheet
     Dim pathVer52 As String, pathTemplate As String
     Dim fileNameSource As String
+    Dim newFileName As String
 
     pathVer52 = "\\wbvcfs.local\share4\SBM\SharePri\大宮テクニクス課\タセンター運用フォルダ\14_定例会編集用資料\原紙\YDOC\工数取得マクロ作成済\"
     pathTemplate = pathVer52
 
-    ' 打开目标：Ver5.2 模板
+    ' 打开目标：Ver5.2模板
     Set wbVer52 = Workbooks.Open(pathVer52 & "工数取得_Ver5.2(" & 年 & 月 & ").xlsm")
     Set wsTarget = wbVer52.Worksheets("工数取得-都度対応項目(時間)")
     wsTarget.Range("I5").Value = 年
@@ -22,13 +23,21 @@ Sub Process_Ver52(yyyymm As String, 年 As String, 月 As String)
     Set wbSource = Workbooks.Open(pathTemplate & fileNameSource)
     Set wsSource = wbSource.Worksheets("工数取得-都度対応項目(時間)")
 
-    ' ✅ 直接 O11:EH64 → O10:EH63 に貼り付け
+    ' ✅ 直接範囲コピー O11:EH64 → O10:EH63
     wsSource.Range("O11:EH64").Copy
     wsTarget.Range("O10").PasteSpecial Paste:=xlPasteValues
 
     wbSource.Close False
 
-    ' ✅ 复制完成后，打开模板文件夹
-    ThisWorkbook.FollowHyperlink pathVer52
-End Sub
+    ' ✅ 临时重命名工作簿标题（不保存模板）
+    newFileName = "工数取得_Ver5.2_" & yyyymm & ".xlsm"
+    wbVer52.Title = newFileName
+    wbVer52.Windows(1).Caption = newFileName
 
+    ' ✅ 提醒OP：「请手动另存为」
+    MsgBox "作業が完了しました。" & vbCrLf & "このファイルは一時的に '" & newFileName & "' に名前を変更しました。" & vbCrLf & "必ず「名前を付けて保存」してください！", vbInformation
+
+    ' ✅ 自动打开模板保存文件夹供选择
+    ThisWorkbook.FollowHyperlink pathVer52
+
+End Sub
