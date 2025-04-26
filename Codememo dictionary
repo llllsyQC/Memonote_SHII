@@ -1,43 +1,71 @@
-Sub Process_Ver52(yyyymm As String, 年 As String, 月 As String)
-    Dim wbVer52 As Workbook, wbSource As Workbook
-    Dim wsTarget As Worksheet, wsSource As Worksheet
-    Dim pathVer52 As String, pathTemplate As String
-    Dim fileNameSource As String
-    Dim newFileName As String
+3. 月次工数集計シート作成処理
+✅ 自動で次の処理が行われる
 
-    pathVer52 = "\\wbvcfs.local\share4\SBM\SharePri\大宮テクニクス課\タセンター運用フォルダ\14_定例会編集用資料\原紙\YDOC\工数取得マクロ作成済\"
-    pathTemplate = pathVer52
+【定時作業チェックシート】から「定(日)」「定(夜)」シートへ貼付
 
-    ' 打开目标：Ver5.2模板
-    Set wbVer52 = Workbooks.Open(pathVer52 & "工数取得_Ver5.2(" & 年 & 月 & ").xlsm")
-    Set wsTarget = wbVer52.Worksheets("工数取得-都度対応項目(時間)")
-    wsTarget.Range("I5").Value = 年
-    wsTarget.Range("I8").Value = 月
+【日報】から「日報」シートへ貼付
 
-    ' 找到并打开月次集計シート源文件
-    fileNameSource = Dir(pathTemplate & "月次工数集計シート*" & yyyymm & "*.xlsm")
-    If fileNameSource = "" Then
-        MsgBox "源ファイルが見つかりません": Exit Sub
-    End If
+【定時外】から「定時外」シートへ貼付
 
-    Set wbSource = Workbooks.Open(pathTemplate & fileNameSource)
-    Set wsSource = wbSource.Worksheets("工数取得-都度対応項目(時間)")
+「工数取得-都度対応項目(時間)」シートの I5／I8セルに 年・月 をセット
 
-    ' ✅ 直接範囲コピー O11:EH64 → O10:EH63
-    wsSource.Range("O11:EH64").Copy
-    wsTarget.Range("O10").PasteSpecial Paste:=xlPasteValues
+✅ 工数番号マッチング処理
 
-    wbSource.Close False
+「0消し(最終)」シートのデータをもとに、日勤・夜勤データを「工数取得-都度対応項目(時間)」へ貼り付け
 
-    ' ✅ 临时重命名工作簿标题（不保存模板）
-    newFileName = "工数取得_Ver5.2_" & yyyymm & ".xlsm"
-    wbVer52.Title = newFileName
-    wbVer52.Windows(1).Caption = newFileName
+✅ 完了後
 
-    ' ✅ 提醒OP：「请手动另存为」
-    MsgBox "作業が完了しました。" & vbCrLf & "このファイルは一時的に '" & newFileName & "' に名前を変更しました。" & vbCrLf & "必ず「名前を付けて保存」してください！", vbInformation
+ファイル名「月次工数集計シート_yyyymm.xlsm」で自動保存される
 
-    ' ✅ 自动打开模板保存文件夹供选择
-    ThisWorkbook.FollowHyperlink pathVer52
+保存先フォルダが自動で開く
 
-End Sub
+セルフチェック表に基づき、保存ファイル内容・ファイル名を確認する
+
+4. Ver5.2 提出用ファイルへの転記処理
+✅ ポップアップ【Ver5.2転記を開始します】が表示 → 【OK】をクリック
+
+✅ 提出用ファイルオープン
+
+工数取得_Ver5.2(年月).xlsm テンプレートファイルを自動で開く
+
+✅ 提出用ファイル設定
+
+「工数取得-都度対応項目(時間)」シートの I5／I8セルに対象年・月をセット
+
+✅ データ転記
+
+月次工数集計シートの「工数取得-都度対応項目(時間)」シートから
+
+O11:EH64 のデータをコピー
+
+Ver5.2ファイルの O10:EH63 に値貼り付け（形式を壊さない）
+
+✅ ファイル名仮変更
+
+開いているVer5.2ファイルの画面タイトルを
+
+工数取得_Ver5.2_yyMM.xlsm に仮変更する
+※まだ保存はされていない！
+
+✅ 完了メッセージ
+
+【作業が完了しました。必ず名前を付けて保存してください】というメッセージが表示 → 【OK】をクリック
+
+✅ ファイル保存先フォルダ自動オープン
+
+Ver5.2保存用フォルダが自動で開く
+
+OPはここで「名前を付けて保存」を実施し、正式な提出用ファイルを作成する
+
+5. 最後のセルフチェック
+✅ 保存した月次工数集計シートとVer5.2ファイルの内容をチェック ✅ チェックリスト（セルフチェック表）に基づいて、以下を確認
+
+ファイル名が正しい
+
+転記内容にズレがない
+
+エラーセルが存在しない（#REF!、#ERROR!など）
+
+全体工数の合計が正常
+
+✅ すべて問題なければ、月次提出作業完了！
