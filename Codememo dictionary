@@ -1,4 +1,34 @@
- '=== 保存後、フォルダを開く ===
-    Dim folderPath1 As String
-    folderPath1 = Left(pathSave, InStrRev(pathSave, "\") - 1)
-    ThisWorkbook.FollowHyperlink folderPath1
+Sub Process_Ver52(yyyymm As String, 年 As String, 月 As String)
+    Dim wbVer52 As Workbook, wbSource As Workbook
+    Dim wsTarget As Worksheet, wsSource As Worksheet
+    Dim pathVer52 As String, pathTemplate As String
+    Dim fileNameSource As String
+
+    pathVer52 = "\\wbvcfs.local\share4\SBM\SharePri\大宮テクニクス課\タセンター運用フォルダ\14_定例会編集用資料\原紙\YDOC\工数取得マクロ作成済\"
+    pathTemplate = pathVer52
+
+    ' 打开目标：Ver5.2 模板
+    Set wbVer52 = Workbooks.Open(pathVer52 & "工数取得_Ver5.2(" & 年 & 月 & ").xlsm")
+    Set wsTarget = wbVer52.Worksheets("工数取得-都度対応項目(時間)")
+    wsTarget.Range("I5").Value = 年
+    wsTarget.Range("I8").Value = 月
+
+    ' 找到并打开月次集計シート源文件
+    fileNameSource = Dir(pathTemplate & "月次工数集計シート*" & yyyymm & "*.xlsm")
+    If fileNameSource = "" Then
+        MsgBox "源ファイルが見つかりません": Exit Sub
+    End If
+
+    Set wbSource = Workbooks.Open(pathTemplate & fileNameSource)
+    Set wsSource = wbSource.Worksheets("工数取得-都度対応項目(時間)")
+
+    ' ✅ 直接 O11:EH64 → O10:EH63 に貼り付け
+    wsSource.Range("O11:EH64").Copy
+    wsTarget.Range("O10").PasteSpecial Paste:=xlPasteValues
+
+    wbSource.Close False
+
+    ' ✅ 复制完成后，打开模板文件夹
+    ThisWorkbook.FollowHyperlink pathVer52
+End Sub
+
