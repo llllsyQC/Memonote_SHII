@@ -105,3 +105,25 @@
             MsgBox "稼働率計算に必要な数値が無効です。", vbCritical
         End If
     End If
+
+
+
+' --- 稼働率計算・チェック（修正版）---
+Dim totalTime As Double, baseTime As Double, 稼働率 As Double
+
+' 将时间读取为小时数（1天 = 24小时）
+totalTime = Application.WorksheetFunction.Sum(ThisWorkbook.Sheets("工数取得-都度対応項目(時間)").Range("EP10:EP64")) * 24
+baseTime = ThisWorkbook.Sheets("工数取得-都度対応項目(時間)").Range("H10").Value * 24
+
+If IsNumeric(totalTime) And IsNumeric(baseTime) And baseTime <> 0 Then
+    稼働率 = (totalTime / baseTime) * 100
+    MsgBox "EP10:EP64 合計 = " & Format(totalTime, "0.00") & " 時間" & vbCrLf & _
+           "H10 = " & Format(baseTime, "0.00") & " 時間" & vbCrLf & _
+           "稼働率 = " & Format(稼働率, "0.00") & "％", vbInformation, "稼働率確認"
+
+    If 稼働率 < 95 Or 稼働率 > 100 Then
+        MsgBox "稼働率が95%〜100%の範囲外です。手動で確認してください。", vbExclamation
+    End If
+Else
+    MsgBox "稼働率計算エラー：数値が無効です。", vbCritical
+End If
