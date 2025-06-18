@@ -1,99 +1,94 @@
-Sub Test_Import_AllSources()
+' ================================
+' 📦 Module: modLogUtility
+' ログ出力 + エラー回復支援
+' ================================
 
-    Dim 年 As String, 月 As String, yyyymm As String
-    年 = InputBox("【年】を入力してください（例：2025）")
-    月 = InputBox("【月】を入力してください（例：04）")
+Public gLogFilePath As String
+Public gHasErrorOccurred As Boolean
+Public gLogLocalFolder As String
+Public gLogNetFolder As String
 
-    If 年 = "" Or 月 = "" Then
-        MsgBox "年と月の入力が必要です。": Exit Sub
-    End If
+' 📌 ログ初期化（ローカル作成 → 後でコピー）
+Sub InitLogger(yyyymm As String)
+    On Error GoTo ErrHandler
 
-    yyyymm = 年 & 月
+    Dim y As String, m As String
+    y = Left(yyyymm, 4)
+    m = Right(yyyymm, 2)
 
-    Dim pathDaily As String
-    pathDaily = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06.日報\06.50定時_工数集計\"
+    ' ローカルログフォルダ
+    gLogLocalFolder = Environ("USERPROFILE") & "\Documents\工数ログ\" & y & "\" & m
+    MkDirRecursive gLogLocalFolder
 
-    Dim fileName1 As String, fileName2 As String, fileName4 As String
-    Dim wb1 As Workbook, wb2 As Workbook, wb4 As Workbook
+    ' ネットワークログフォルダ（あれば後でコピー）
+    gLogNetFolder = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\14.定例会\編集用資料\工数取得マクロ作成済\ログ\" & y & "\" & m
 
-    ' ① 定時作業チェックシート
-    fileName1 = Dir(pathDaily & "①工数集計_定時作業チェックシート_*_" & yyyymm & ".xlsx")
-    If fileName1 <> "" Then
-        Set wb1 = Workbooks.Open(pathDaily & fileName1)
-        With wb1.Worksheets("定時作業工数集計")
-            .Columns.Hidden = False
-            .Rows.Hidden = False
-        End With
-        ActiveWindow.FreezePanes = False
-        wb1.Worksheets("定時作業工数集計").Range("M4:AQ49").Copy
-        ThisWorkbook.Worksheets("定（日）").Range("B3").PasteSpecial xlPasteValues
-        wb1.Worksheets("定時作業工数集計").Range("M51:AQ96").Copy
-        ThisWorkbook.Worksheets("定（夜）").Range("B3").PasteSpecial xlPasteValues
-        wb1.Close False
-    Else
-        MsgBox "①ファイルが見つかりません", vbExclamation
-    End If
+    ' ログファイル名
+    gLogFilePath = gLogLocalFolder & "\log_" & Format(Now, "yyyymmdd_HHmmss") & ".txt"
 
-    ' ② 定時外
-    fileName2 = Dir(pathDaily & "②工数集計_定時外_*_" & yyyymm & ".xlsx")
-    If fileName2 <> "" Then
-        Set wb2 = Workbooks.Open(pathDaily & fileName2)
-        wb2.Worksheets("0集計シート").Range("B4:F50").Copy
-        ThisWorkbook.Worksheets("定時外").Range("F7").PasteSpecial xlPasteValues
-        wb2.Close False
-    Else
-        MsgBox "②ファイルが見つかりません", vbExclamation
-    End If
+    Open gLogFilePath For Output As #1
+    Print #1, "【ログ開始】 " & Now
+    Close #1
+    Exit Sub
 
-    ' ④ 日報
-    fileName4 = Dir(pathDaily & "④工数集計_日報_*_" & yyyymm & ".xlsx")
-    If fileName4 <> "" Then
-        Set wb4 = Workbooks.Open(pathDaily & fileName4)
-        wb4.Worksheets("日報").Range("F7:LC53").Copy
-        ThisWorkbook.Worksheets("日報").Range("F7").PasteSpecial xlPasteValues
-        wb4.Close False
-    Else
-        MsgBox "④ファイルが見つかりません", vbExclamation
-    End If
-
-    ' 年月を書き込む
-    With ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
-        .Range("I5").Value = 年
-        .Range("I8").Value = 月
-    End With
-
-    MsgBox "Step 1 完了！ファイル読込と貼付成功", vbInformation
-
+ErrHandler:
+    MsgBox "ログファイルの初期化中にエラーが発生しました：" & vbCrLf & Err.Description, vbCritical
+    End
 End Sub
 
-4月19日の業務報告をいたします。
+' 📌 ログ追記
+Sub WriteLog(msg As String)
+    On Error Resume Next
+    Open gLogFilePath For Append As #1
+    Print #1, "[" & Format(Now, "yyyy/mm/dd HH:MM:SS") & "] " & msg
+    Close #1
+End Sub
 
-その他対応について
-まず、**設備業者入館対応（発生点検）**です。9時21分にイーエスシーの高桥様が受付に来室され、7階共用部の害虫点検のため入室されました。作業終了後、9時26分に退室手続きと終了報告を受領しております。
+' 📌 最後にログコピー（ローカル → ネット共有）
+Sub CopyLogToNetwork()
+    On Error GoTo ErrHandler
 
-続いて、空調機操作対応です。12時47分に7B東側（4列）の温度が内部閾値である24.5℃を上回り、BMSアラームが発報しました（計8回発報・復旧あり）。12時48分に空調機1台1号を稼働させ、その後15時00分に温度が安定していることを確認しております。
+    If Dir(gLogNetFolder, vbDirectory) = "" Then
+        MkDirRecursive gLogNetFolder
+    End If
 
-KIX11業務について
-KIX11 XXXXXXにて湿度が内部閾値を超過したことにより、アラームの自動メールを15時20分に受信しましたが、記載されていた発生時刻が「2025年3月22日 04:33」となっていたため、念のため15時24分に谁家的中心啊のxxx氏へ架電し、内容を報告しました。
+    Dim destPath As String
+    destPath = gLogNetFolder & "\" & Dir(gLogFilePath)
+    FileCopy gLogFilePath, destPath
 
-その後、15時25分には、正しい発生時刻「4月19日 15:25:00」が記載されたアラームを受信、さらに15時39分に（発生時刻 15:38:00）も受信しました。これらはいずれも同一内容のアラームです。
+    WriteLog "✅ ログを共有フォルダへコピー完了: " & destPath
+    Exit Sub
 
-アラーム3件に関しては、16時18分〜16時41分にかけて復旧メールを受信済みです。17時09分には、吹田DCよりアラーム検知に関する報告、また17時15分には復旧完了の連絡をそれぞれメールにて受領しております。
+ErrHandler:
+    MsgBox "⚠ ログを共有フォルダにコピーできませんでした。" & vbCrLf & _
+           "ローカルログは以下に保存されています：" & vbCrLf & gLogFilePath, vbExclamation
+    WriteLog "❌ ログの共有コピー失敗: " & Err.Description
+End Sub
 
-以上です。
+' 📌 フォルダ存在チェック＋再帰的作成
+Sub MkDirRecursive(ByVal path As String)
+    Dim tempPath As String, folders() As String
+    Dim i As Integer
+    folders = Split(path, "\")
+    tempPath = folders(0)
+    For i = 1 To UBound(folders)
+        tempPath = tempPath & "\" & folders(i)
+        If Len(Dir(tempPath, vbDirectory)) = 0 Then
+            MkDir tempPath
+        End If
+    Next i
+End Sub
 
-本日4月18日の業務報告をいたします。
+' 📌 エラー処理 + 中断 + ログ
+Sub ErrorRollback(Optional ByVal stepName As String = "", Optional ByVal errMsg As String = "")
+    gHasErrorOccurred = True
 
-顧客対応について
-まず、モラトリアム日程の変更に関する連絡です。巴西先生様より、当初5月4日から8日まで予定されていたモラトリアム期間が、5月5日から8日までに短縮された旨のメールを受信しました。これに関して、10時43分に一次回答として、単純な期間短縮という理解でよいかを確認のうえ、XXXX様へ返信しております。あわせて、XXXXXXXXにもこの内容を報告し、XXXおよびXXXとの連携を依頼しました。
+    If stepName <> "" Then WriteLog "❌ [" & stepName & "] でエラー： " & errMsg
+    If errMsg <> "" Then
+        MsgBox "エラーが発生しました：" & vbCrLf & errMsg & vbCrLf & vbCrLf & _
+               "ログを確認してください。" & vbCrLf & gLogFilePath, vbCritical, "処理中断"
+    End If
 
-続いて、**設備業者入館対応（空調機点検）**です。9時43分より哪里的のxxx様、xxx様、xxx様が来館され、加湿器を含む空調機点検のため、各所への入退室が繰り返されました。点検対象は顧客オフィス、OP室、顧客倉庫などで、エスコートはXXX様およびXXX様に依頼しております。12時10分に作業終了の報告を受けた際、午後のドレンパン清掃の有無を確認したところ、後ほどxxxxより連絡があり、点検時（4月1日～5日）にすでに実施済みであるため、明日以降も作業はなしとの回答を受領しました。以上の作業開始・終了については、Ixxxx様とxxxxx様にも都度メールで報告済みです。
-
-次に、火元責任者プレート張替え対応です。13時に哪里的の火元責任者プレート撤去のため、XXXX様にエスコートを依頼し、13時10分に撤去を完了。続けて、xxx様に架電報告し、13時20分にプレートを回収いただきました。その後、13時30分にxxxx様より張替完了の連絡を受けています。
-
-KIX11業務について
-10時より、KIX11ファシリティ月次MTGが開催され、ミーティング後、12時03分にxxxx様宛に課題管理表を送付しています。
-
-また、KIX11側でもモラトリアム日程変更連絡があり、10時35分にxxxx様よりメールを受領。内容は哪里的中心と同様で、5月5日から8日への期間変更について、メンテナンスへの影響確認依頼でした。10時54分には谁啊xxx氏宛にこの件を報告し、哪家への連携も依頼しました。その後、19時19分にxxxx氏より、xxxxへの連携が完了したとの報告を受領しています。
-
-以上です。
+    ' すべての一時ファイルなど閉じる処理をここに追記してもOK
+    End
+End Sub
