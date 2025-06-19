@@ -128,20 +128,31 @@ Else
     MsgBox "稼働率計算エラー：数値が無効です。", vbCritical
 End If
 
+' --- 稼働率計算・チェック ---
+Dim totalTime As Double, baseTime As Double, 稼働率 As Double
+Dim rng As Range, cell As Range
+totalTime = 0
 
+Set rng = ThisWorkbook.Sheets("工数取得-都度対応項目（時間）").Range("EP10:EP64")
+
+For Each cell In rng
+    If IsNumeric(cell.Value) Then totalTime = totalTime + cell.Value
+Next cell
+
+totalTime = totalTime * 24
+baseTime = ThisWorkbook.Sheets("工数取得-都度対応項目（時間）").Range("H10").Value * 24
 
 If IsNumeric(totalTime) And IsNumeric(baseTime) And baseTime <> 0 Then
     稼働率 = (totalTime / baseTime) * 100
+
     MsgBox "EP10:EP64 合計=" & Format(totalTime, "0.00") & " 時間" & vbCrLf & _
            "H10 = " & Format(baseTime, "0.00") & " 時間" & vbCrLf & _
-           "稼働率=" & Format(稼働率, "0.0") & "%", vbInformation
+           "稼働率 = " & Format(稼働率, "0.0") & " %", vbInformation, "稼働率確認"
 
     If 稼働率 < 95 Or 稼働率 > 100 Then
-        MsgBox "稼働率が95%～100%の範囲外です。", vbExclamation
-        WriteLog "⚠️ 稼働率 = " & Format(稼働率, "0.0") & "％（範囲外）"
-    Else
-        WriteLog "✅ 稼働率 = " & Format(稼働率, "0.0") & "％（正常）"
+        MsgBox "稼働率が95%～100%の範囲外です。手動で確認してください。", vbExclamation
     End If
 Else
-    Call ErrorRollback("稼働率計算", "計算値が無効です。baseTime=" & baseTime & ", totalTime=" & totalTime)
+    Call ErrorRollback("稼働率計算", "計算値が無効です。" & vbCrLf & _
+                       "baseTime=" & baseTime & ", totalTime=" & totalTime)
 End If
