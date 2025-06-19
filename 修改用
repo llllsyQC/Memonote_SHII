@@ -1,19 +1,49 @@
-Sub Step6_保存処理(yyyymm As String)
-    Dim pathSave As String
-    pathSave = "..." '你的路径
+' 📦 modLogUtility（日志模块）
+Public gLogFilePath As String
+Public gHasErrorOccurred As Boolean
+Public gLogLocalFolder As String
+Public gLogNetworkFolder As String
 
-    Application.DisplayAlerts = False
-    ThisWorkbook.SaveAs Filename:=pathSave & "月次工数集計シート" & yyyymm & ".xlsm", _
-        FileFormat:=xlOpenXMLWorkbookMacroEnabled
-    Application.DisplayAlerts = True
+Sub InitLogger(yyyymm As String)
+    On Error GoTo ErrHandler
+    
+    Dim y As String, m As String
+    y = Left(yyyymm, 4)
+    m = Right(yyyymm, 2)
 
-    MsgBox "月次工数集計シートを保存しました：" & yyyymm
-    MsgBox "工数取得ver.5.2（大宮）転記開始"
+    ' ローカルログフォルダ（Documents内）
+    gLogLocalFolder = Environ("USERPROFILE") & "\Documents\工数ログ\" & y & "\" & m & "\"
+    MkDirRecursive gLogLocalFolder
 
-    ' === 保存後、フォルダを開く ===
-    Dim folderPath1 As String
-    folderPath1 = Left(pathSave, InStrRev(pathSave, "¥") - 1)
-    ThisWorkbook.FollowHyperlink folderPath1
+    ' ログファイル名生成
+    gLogFilePath = gLogLocalFolder & "log_" & Format(Now, "yyyymmdd_HHmmss") & ".txt"
+    
+    ' ログ初期書き込み
+    Open gLogFilePath For Output As #1
+    Print #1, "【ログ開始】" & Now
+    Close #1
+
+    ' ネットワークフォルダにも同じ階層で作成
+    gLogNetworkFolder = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\14.定例会\編集用資料\工数取得マクロ作成済\ログ\" & y & "\" & m & "\"
+    MkDirRecursive gLogNetworkFolder
+
+    Exit Sub
+
+ErrHandler:
+    MsgBox "ログ初期化時にエラーが発生しました：" & vbCrLf & Err.Description, vbCritical
 End Sub
 
-Call Step6_保存処理(yyyymm)
+' 🔄 ログファイルをネットワークにコピー
+Sub CopyLogToNetwork()
+    On Error Resume Next
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+
+    If fso.FileExists(gLogFilePath) Then
+        fso.CopyFile gLogFilePath, gLogNetworkFolder & fso.GetFileName(gLogFilePath), True
+    End If
+End Sub
+
+
+
+Call CopyLogToNetwork
