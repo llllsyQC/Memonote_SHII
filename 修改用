@@ -1,39 +1,62 @@
-Sub CopyLogToNetwork()
-    On Error GoTo ErrHandler
+' ================================
+' 📦 Module: modLogUtility
+' ローカルログ出力 + エラー回復支援（Step対応）
+' ================================
 
-    ' ネットワークフォルダがなければ作成
-    If Dir(gLogNetFolder, vbDirectory) = "" Then
-        MkDirRecursive gLogNetFolder
+Public gLogFilePath As String
+Public gHasErrorOccurred As Boolean
+
+' 📌 初期化：ログファイル準備（ローカルに保存）
+Sub InitLogger(yyyymm As String)
+    Dim folderPath As String
+    folderPath = Environ("USERPROFILE") & "\Documents\工数ログ\" & Left(yyyymm, 4) & "\" & Right(yyyymm, 2)
+    
+    MkDirRecursive folderPath
+    
+    gLogFilePath = folderPath & "\log_" & Format(Now, "yyyymmdd_HHmmss") & ".txt"
+    
+    Open gLogFilePath For Output As #1
+    Print #1, "【ログ開始】" & Now
+    Close #1
+End Sub
+
+' 📌 ステップ付きログ追記
+Sub WriteLogStep(stepCode As String, msg As String)
+    On Error Resume Next
+    Open gLogFilePath For Append As #1
+    Print #1, "[" & Format(Now, "yyyy/mm/dd HH:MM:SS") & "] " & stepCode & " ▶ " & msg
+    Close #1
+End Sub
+
+' 📌 通常ログ追記（補助的に使用可）
+Sub WriteLog(msg As String)
+    On Error Resume Next
+    Open gLogFilePath For Append As #1
+    Print #1, "[" & Format(Now, "yyyy/mm/dd HH:MM:SS") & "] " & msg
+    Close #1
+End Sub
+
+' 📌 フォルダ存在チェック + 再帰作成
+Sub MkDirRecursive(ByVal path As String)
+    Dim tempPath As String, folders() As String
+    Dim i As Integer
+    folders = Split(path, "\")
+    tempPath = folders(0)
+    For i = 1 To UBound(folders)
+        tempPath = tempPath & "\" & folders(i)
+        If Dir(tempPath, vbDirectory) = "" Then MkDir tempPath
+    Next i
+End Sub
+
+' 📌 グローバルロールバック処理
+Sub ErrorRollback(Optional ByVal stepCode As String = "", Optional ByVal errMsg As String = "")
+    gHasErrorOccurred = True
+    If errMsg <> "" Then
+        If stepCode <> "" Then
+            WriteLogStep stepCode, "❌ エラー発生：" & errMsg
+        Else
+            WriteLog "❌ エラー発生：" & errMsg
+        End If
     End If
-
-    Dim destPath As String
-    destPath = gLogNetFolder & "\" & Dir(gLogFilePath)
-
-    ' ADODB.Stream を使ってコピー（FileCopy の代替）
-    Dim streamIn As Object, streamOut As Object
-    Set streamIn = CreateObject("ADODB.Stream")
-    Set streamOut = CreateObject("ADODB.Stream")
-
-    streamIn.Type = 1 ' バイナリ
-    streamIn.Open
-    streamIn.LoadFromFile gLogFilePath
-
-    streamOut.Type = 1
-    streamOut.Open
-    streamIn.Position = 0
-    streamIn.CopyTo streamOut
-    streamOut.SaveToFile destPath, 2 ' 2 = 上書き
-
-    streamIn.Close
-    streamOut.Close
-    Set streamIn = Nothing
-    Set streamOut = Nothing
-
-    WriteLog "✅ ログの共有フォルダコピー完了：" & destPath
-    Exit Sub
-
-ErrHandler:
-    MsgBox "⚠️ ログのネットワークコピーに失敗しました。" & vbCrLf & _
-           "ファイルはローカルに保存されています：" & vbCrLf & gLogFilePath, vbExclamation
-    WriteLog "❌ ログのコピー失敗：" & Err.Description
+    MsgBox "エラーが発生しました。" & vbCrLf & errMsg & vbCrLf & "ログを確認してください。", vbCritical, "処理中断"
 End Sub
