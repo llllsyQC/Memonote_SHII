@@ -97,3 +97,31 @@ End Sub
 
 
 Call CopyLogToNetwork
+
+
+
+
+Sub CopyLogToNetwork()
+    On Error GoTo ErrHandler
+
+    If Dir(gLogNetFolder, vbDirectory) = "" Then
+        MkDirRecursive gLogNetFolder
+    End If
+
+    Dim destPath As String
+    destPath = gLogNetFolder & "\" & Dir(gLogFilePath)
+
+    ' 使用 FileSystemObject（兼容路径中的特殊字符）
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    fso.CopyFile gLogFilePath, destPath, True
+
+    WriteLog "✅ ログを共有フォルダへコピー完了：" & destPath
+    Exit Sub
+
+ErrHandler:
+    MsgBox "⚠️ ログのネットワークコピーに失敗しました：" & vbCrLf & _
+           "ファイルはローカルに保存されています。" & vbCrLf & gLogFilePath, vbExclamation
+    WriteLog "❌ ログの共有コピー失敗：" & Err.Description
+End Sub
+
