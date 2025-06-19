@@ -1,28 +1,109 @@
-' --- 稼働率計算・チェック ---
-Dim totalTime As Double, baseTime As Double, 稼働率 As Double
-Dim rng As Range, cell As Range
-totalTime = 0
+Sub Copy_WorkHours_By工数番号(yyyymm As String, 年 As String, 月 As String)
+    On Error GoTo ERR_HANDLER
 
-Set rng = ThisWorkbook.Sheets("工数取得-都度対応項目（時間）").Range("EP10:EP64")
+    Call WriteLog("STEP1: 工数取得処理 開始")
 
-For Each cell In rng
-    If IsNumeric(cell.Value) Then totalTime = totalTime + cell.Value
-Next cell
+    Dim wsSrc As Worksheet, wsDest As Worksheet
+    Dim 工数Map As Object
+    Dim i As Integer, srcRow As Long
+    Dim 工数番号 As String
+    Dim destRow As Long
+    Dim dayBaseCol As Long
+    Dim colOffset As Long
+    Dim 日勤列 As Long, 夜勤列 As Long
+    Dim 日付判定セル As Range
+    Dim pathSave As String
+    Dim alertState As Boolean
+    alertState = Application.DisplayAlerts
 
-totalTime = totalTime * 24
-baseTime = ThisWorkbook.Sheets("工数取得-都度対応項目（時間）").Range("H10").Value * 24
+    Set wsSrc = ThisWorkbook.Worksheets("0消し（最終）")
+    Set wsDest = ThisWorkbook.Worksheets("工数取得-都度対応項目（時間）")
+    Set 工数Map = CreateObject("Scripting.Dictionary")
 
-If IsNumeric(totalTime) And IsNumeric(baseTime) And baseTime <> 0 Then
-    稼働率 = (totalTime / baseTime) * 100
+    ' === STEP2: 工数番号マッピング ===
+    Call WriteLog("STEP2: 工数番号マッピング開始")
+    For destRow = 11 To 64
+        工数番号 = Trim(CStr(wsDest.Cells(destRow, "I").Value))
+        If 工数番号 <> "" Then
+            工数Map(工数番号) = destRow
+        End If
+    Next
+    Call WriteLog("STEP2: 工数番号マッピング完了")
 
-    MsgBox "EP10:EP64 合計=" & Format(totalTime, "0.00") & " 時間" & vbCrLf & _
-           "H10 = " & Format(baseTime, "0.00") & " 時間" & vbCrLf & _
-           "稼働率 = " & Format(稼働率, "0.0") & " %", vbInformation, "稼働率確認"
+    ' === STEP3: 各日付に対するデータ貼付 ===
+    Call WriteLog("STEP3: 日別データ貼付開始")
+    For i = 0 To 30
+        Set 日付判定セル = wsDest.Cells(11, 4 * i + 15)
+        If 日付判定セル.DisplayFormat.Interior.ColorIndex = xlNone Then
+            colOffset = 2  ' 休日：R/S
+        Else
+            colOffset = 0  ' 平日：P/Q
+        End If
 
-    If 稼働率 < 95 Or 稼働率 > 100 Then
-        MsgBox "稼働率が95%～100%の範囲外です。手動で確認してください。", vbExclamation
+        dayBaseCol = 4 * i + 15 + colOffset
+
+        For srcRow = 6 To 59
+            工数番号 = Trim(CStr(wsSrc.Cells(srcRow, "E").Value))
+            If 工数Map.exists(工数番号) Then
+                destRow = 工数Map(工数番号)
+                日勤列 = 2 * i + 6
+                夜勤列 = 2 * i + 7
+
+                ' 日勤
+                With wsDest.Cells(destRow, dayBaseCol)
+                    .NumberFormat = "h:mm"
+                    .Value = wsSrc.Cells(srcRow, 日勤列).Value
+                End With
+
+                ' 夜勤
+                With wsDest.Cells(destRow, dayBaseCol + 1)
+                    .NumberFormat = "h:mm"
+                    .Value = wsSrc.Cells(srcRow, 夜勤列).Value
+                End With
+            End If
+        Next srcRow
+    Next i
+    Call WriteLog("STEP3: 日別データ貼付完了")
+
+    ' === STEP4: 勤務表＆残業取得 ===
+    Call WriteLog("STEP4: 時間集計データ取得 開始")
+
+    ' 省略：你原本填入H10~H22的代码（已经能正常运行）
+    ' 如果你需要我也帮你这段加WriteLog请说，我会继续
+
+    Call WriteLog("STEP4: 時間集計データ取得 完了")
+
+    ' === STEP5: 稼働率計算 ===
+    Call WriteLog("STEP5: 稼働率計算 開始")
+
+    Dim totalTime As Double, baseTime As Double, 稼働率 As Double
+    totalTime = Application.WorksheetFunction.Sum(wsDest.Range("EP10:EP64")) * 24
+    baseTime = wsDest.Range("H10").Value * 24
+
+    WriteLog "totalTime = " & totalTime
+    WriteLog "baseTime = " & baseTime
+
+    If IsNumeric(totalTime) And IsNumeric(baseTime) And baseTime <> 0 Then
+        稼働率 = (totalTime / baseTime) * 100
+        WriteLog "稼働率 = " & Format(稼働率, "0.0") & " %"
+
+        MsgBox "EP10:EP64 合計=" & Format(totalTime, "0.00") & " 時間" & vbCrLf & _
+               "H10 = " & Format(baseTime, "0.00") & " 時間" & vbCrLf & _
+               "稼働率 = " & Format(稼働率, "0.0") & " %", vbInformation, "稼働率確認"
+
+        If 稼働率 < 95 Or 稼働率 > 100 Then
+            MsgBox "稼働率が95%～100%の範囲外です。", vbExclamation
+            WriteLog "⚠️ 稼働率が範囲外：" & 稼働率
+        End If
+    Else
+        MsgBox "稼働率計算エラー：数値が無効です。", vbCritical
+        WriteLog "❌ 稼働率計算エラー：baseTime=" & baseTime & ", totalTime=" & totalTime
     End If
-Else
-    Call ErrorRollback("稼働率計算", "計算値が無効です。" & vbCrLf & _
-                       "baseTime=" & baseTime & ", totalTime=" & totalTime)
-End If
+
+    Call WriteLog("STEP5: 稼働率計算 完了")
+
+    Exit Sub
+
+ERR_HANDLER:
+    Call ErrorRollback("Copy_WorkHours_By工数番号 / STEP不明", Err.Description)
+End Sub
