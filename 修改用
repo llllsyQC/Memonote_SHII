@@ -1,109 +1,7 @@
-' ================================
-' 📦 Module: modLogUtility
-' ログ出力 + エラー回復支援
-' ================================
-
-' ▼ ログ用のグローバル変数
-Public gLogFilePath As String                  ' ログファイル（本体）
-Public gHasErrorOccurred As Boolean            ' エラー発生フラグ
-Public gLogLocalFolder As String               ' ローカルログフォルダ
-Public gLogNetFolder As String                 ' ネットワークログフォルダ（共有先）
-
-' 📌 初期化：ログファイル準備（ローカル）
-Sub InitLogger(yyyymm As String)
-    On Error GoTo ErrHandler
-
-    Dim y As String, m As String
-    y = Left(yyyymm, 4)
-    m = Right(yyyymm, 2)
-
-    ' ▼ ローカルフォルダ（Documents直下）
-    gLogLocalFolder = Environ("USERPROFILE") & "\Documents\工数ログ\" & y & "\" & m
-    Call MkDirRecursive(gLogLocalFolder)
-
-    ' ▼ ネットワークフォルダ（共有先）
-    gLogNetFolder = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\14.定例会\編集用資料\工数取得マクロ作成済\ログ\" & y & "\" & m
-
-    ' ▼ ファイル名生成
-    gLogFilePath = gLogLocalFolder & "\log_" & Format(Now, "yyyymmdd_HHmmss") & ".txt"
-
-    ' ▼ ログファイル初期出力
-    Open gLogFilePath For Output As #1
-    Print #1, "[ログ開始] " & Format(Now, "yyyy/mm/dd HH:MM:SS")
-    Close #1
-
-    Exit Sub
-
-ErrHandler:
-    MsgBox "ログファイルの初期化中にエラーが発生しました：" & vbCrLf & Err.Description, vbCritical
-End Sub
-
-
-' 📌 ログに追記
-Sub WriteLog(msg As String)
-    On Error Resume Next
-    Open gLogFilePath For Append As #1
-    Print #1, "[" & Format(Now, "yyyy/mm/dd HH:MM:SS") & "] " & msg
-    Close #1
-End Sub
-
-
-' 📌 フォルダなければ作成
-Sub MkDirRecursive(ByVal path As String)
-    Dim tempPath As String, folders() As String
-    Dim i As Integer
-
-    folders = Split(path, "\")
-    tempPath = folders(0)
-    For i = 1 To UBound(folders)
-        tempPath = tempPath & "\" & folders(i)
-        If Len(Dir(tempPath, vbDirectory)) = 0 Then MkDir tempPath
-    Next i
-End Sub
-
-' 📌 エラー処理 + ログ出力 + 中断
-Sub ErrorRollback(Optional ByVal stepName As String = "", Optional ByVal errMsg As String = "")
-    gHasErrorOccurred = True
-
-    If stepName <> "" Then WriteLog "[" & stepName & "] でエラー：" & errMsg
-    If errMsg <> "" Then
-        MsgBox "エラーが発生しました：" & vbCrLf & errMsg & vbCrLf & _
-               "ログを確認してください。" & vbCrLf & gLogFilePath, vbCritical, "処理中断"
-    End If
-
-    ' → 必要なら一時ファイルクローズなど追加可能
-End Sub
-
-' 📌 ログを共有フォルダにコピー
 Sub CopyLogToNetwork()
     On Error GoTo ErrHandler
 
-    ' ネットワークフォルダなければ作る
-    If Dir(gLogNetFolder, vbDirectory) = "" Then MkDirRecursive gLogNetFolder
-
-    Dim destPath As String
-    destPath = gLogNetFolder & "\" & Dir(gLogFilePath)
-
-    FileCopy gLogFilePath, destPath
-    WriteLog "✅ ログを共有フォルダへコピー完了 → " & destPath
-
-    Exit Sub
-
-ErrHandler:
-    MsgBox "❌ ログのネットワークコピーに失敗しました：" & vbCrLf & _
-           "ファイルはローカルに保存されています。" & vbCrLf & gLogFilePath, vbExclamation
-    WriteLog "❌ ログのコピー失敗: " & Err.Description
-End Sub
-
-
-Call CopyLogToNetwork
-
-
-
-
-Sub CopyLogToNetwork()
-    On Error GoTo ErrHandler
-
+    ' ネットワークフォルダがなければ作成
     If Dir(gLogNetFolder, vbDirectory) = "" Then
         MkDirRecursive gLogNetFolder
     End If
@@ -111,17 +9,31 @@ Sub CopyLogToNetwork()
     Dim destPath As String
     destPath = gLogNetFolder & "\" & Dir(gLogFilePath)
 
-    ' 使用 FileSystemObject（兼容路径中的特殊字符）
-    Dim fso As Object
-    Set fso = CreateObject("Scripting.FileSystemObject")
-    fso.CopyFile gLogFilePath, destPath, True
+    ' ADODB.Stream を使ってコピー（FileCopy の代替）
+    Dim streamIn As Object, streamOut As Object
+    Set streamIn = CreateObject("ADODB.Stream")
+    Set streamOut = CreateObject("ADODB.Stream")
 
-    WriteLog "✅ ログを共有フォルダへコピー完了：" & destPath
+    streamIn.Type = 1 ' バイナリ
+    streamIn.Open
+    streamIn.LoadFromFile gLogFilePath
+
+    streamOut.Type = 1
+    streamOut.Open
+    streamIn.Position = 0
+    streamIn.CopyTo streamOut
+    streamOut.SaveToFile destPath, 2 ' 2 = 上書き
+
+    streamIn.Close
+    streamOut.Close
+    Set streamIn = Nothing
+    Set streamOut = Nothing
+
+    WriteLog "✅ ログの共有フォルダコピー完了：" & destPath
     Exit Sub
 
 ErrHandler:
-    MsgBox "⚠️ ログのネットワークコピーに失敗しました：" & vbCrLf & _
-           "ファイルはローカルに保存されています。" & vbCrLf & gLogFilePath, vbExclamation
-    WriteLog "❌ ログの共有コピー失敗：" & Err.Description
+    MsgBox "⚠️ ログのネットワークコピーに失敗しました。" & vbCrLf & _
+           "ファイルはローカルに保存されています：" & vbCrLf & gLogFilePath, vbExclamation
+    WriteLog "❌ ログのコピー失敗：" & Err.Description
 End Sub
-
