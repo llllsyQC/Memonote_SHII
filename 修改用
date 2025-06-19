@@ -127,3 +127,21 @@ If IsNumeric(totalTime) And IsNumeric(baseTime) And baseTime <> 0 Then
 Else
     MsgBox "稼働率計算エラー：数値が無効です。", vbCritical
 End If
+
+
+
+If IsNumeric(totalTime) And IsNumeric(baseTime) And baseTime <> 0 Then
+    稼働率 = (totalTime / baseTime) * 100
+    MsgBox "EP10:EP64 合計=" & Format(totalTime, "0.00") & " 時間" & vbCrLf & _
+           "H10 = " & Format(baseTime, "0.00") & " 時間" & vbCrLf & _
+           "稼働率=" & Format(稼働率, "0.0") & "%", vbInformation
+
+    If 稼働率 < 95 Or 稼働率 > 100 Then
+        MsgBox "稼働率が95%～100%の範囲外です。", vbExclamation
+        WriteLog "⚠️ 稼働率 = " & Format(稼働率, "0.0") & "％（範囲外）"
+    Else
+        WriteLog "✅ 稼働率 = " & Format(稼働率, "0.0") & "％（正常）"
+    End If
+Else
+    Call ErrorRollback("稼働率計算", "計算値が無効です。baseTime=" & baseTime & ", totalTime=" & totalTime)
+End If
