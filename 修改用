@@ -58,20 +58,18 @@ Sub ErrorRollback(Optional ByVal stepCode As String = "", Optional ByVal errMsg 
             WriteLog "❌ エラー発生：" & errMsg
         End If
     End If
-    MsgBox "エラーが発生しました。" & vbCrLf & errMsg & vbCrLf & "ログを確認してください。", vbCritical, "処理中断"
-End Sub
+    MsgBox "エラーが発生しました。" & vbCrLf & errMsg & vbCrLf & "ログを確認してください。", vbCritical, "処理
 
-We are writing to inform you that a strong odor was detected on June 19 in Machine Room 7A.
 
-We received a report from Mr. Maurin stating that a stench was coming from Machine Room 7A (SR01) at approximately 9:52 AM.
-Our building technician entered the room between 10:56 and 11:38 AM for investigation, accompanied by Mr. Cunanan.
 
-Following the investigation, we identified the humidifier as the source of the odor. The air filter element required replacement.
+We would like to provide an update regarding the missing data identified in this month’s access report.
 
-Subsequently, three building technicians entered Machine Room 7A (SR01) and completed the replacement work by 11:38 AM.
+Our partner company has completed their investigation and confirmed the root cause. According to their findings, the local security system did not properly transmit the access log data to the database at the time of entry. As a result, the system was unable to record which card was used during the second authentication step in the entry process.
 
-The humidifier is now operating normally without any noticeable odor.
+This type of log data is typically transferred from the on-site security equipment to the central database and recorded without issue. However, in this instance, there was a rare communication failure between the equipment and the database, causing the data to be lost in transmission.
 
-*Please note that these technicians were originally scheduled to enter the room for today’s monthly maintenance. Therefore, no additional entry records are required for this investigation.
+At this moment, all systems – including the security equipment and the database – are operating normally, and no ongoing issues have been identified.
 
-We apologize for any inconvenience this may have caused.
+Although this was an isolated case, we will continue to monitor the system closely. Should similar cases occur in the future, we will verify the situation using surveillance footage and provide necessary evidence as we did this time.
+
+We sincerely apologize for any inconvenience this may have caused and appreciate your understanding.
