@@ -20,20 +20,24 @@ Private Sub Worksheet_Change(ByVal Target As Range)
             actualStock = Val(stockRaw)
             threshold = Val(thresholdRaw)
 
-            ' 判断处理逻辑
+' 補充要否の判断処理
             If stockRaw = "" Or thresholdRaw = "" Then
+                ' どちらか空白の場合は判定しない memo: 空欄→結果も空欄に
                 Cells(checkRow, "G").Value = ""
             ElseIf actualStock = 0 And stockRaw <> "0" Then
+                ' 数字として読めなかった場合は警告表示 memo: 「箱1」など Val不能時
                 Cells(checkRow, "G").Value = "⚠形式不明"
             ElseIf threshold = 0 And thresholdRaw <> "0" Then
                 Cells(checkRow, "G").Value = "⚠形式不明"
             ElseIf actualStock < threshold Then
+                ' 補充基準未満 → 補充要 memo: 在庫が基準以下
                 Cells(checkRow, "G").Value = "補充要"
             Else
+                ' 基準以上 → OK
                 Cells(checkRow, "G").Value = "OK"
             End If
         Next cell
 
-        Application.EnableEvents = True
+        Application.EnableEvents = True  ' イベント再有効化 memo: 終了処理
     End If
 End Sub
