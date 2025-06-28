@@ -1,3 +1,19 @@
+' === 数字抽出関数（基準値・現在庫から数値を抜き出す） ===
+Function ExtractFirstNumber(ByVal txt As String) As Double
+    Dim regex As Object
+    Set regex = CreateObject("VBScript.RegExp")
+    
+    regex.Pattern = "\d+(\.\d+)?"  ' 数字（整数または小数）
+    regex.Global = False
+    
+    If regex.test(txt) Then
+        ExtractFirstNumber = CDbl(regex.Execute(txt)(0))
+    Else
+        ExtractFirstNumber = -1  ' 数字が見つからなければ-1（形式不明）
+    End If
+End Function
+
+' === メイン処理：在庫数の変更時に補充要否を自動判定・色付け ===
 Private Sub Worksheet_Change(ByVal Target As Range)
     Dim checkRow As Long
     Dim actualStock As Double
@@ -5,41 +21,35 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Dim stockRaw As String
     Dim thresholdRaw As String
 
-    ' F4:F100の変更を監視 memo: 点検欄の入力のみを対象とする
+    ' 対象：F4〜F100 の入力のみ
     If Not Intersect(Target, Range("F4:F100")) Is Nothing Then
         Application.EnableEvents = False
 
         For Each cell In Intersect(Target, Range("F4:F100"))
             checkRow = cell.Row
 
+            ' 原文取得（単位付きのまま）
             stockRaw = Trim(Cells(checkRow, "F").Value)
             thresholdRaw = Trim(Cells(checkRow, "H").Value)
 
-            actualStock = Val(stockRaw)
-            threshold = Val(thresholdRaw)
+            ' 数字部分だけ抽出
+            actualStock = ExtractFirstNumber(stockRaw)
+            threshold = ExtractFirstNumber(thresholdRaw)
 
-            ' 行の色をリセット memo: まず全て初期化
+            ' 背景色初期化（A〜H列）
             Range("A" & checkRow & ":H" & checkRow).Interior.ColorIndex = xlNone
 
-            ' 空欄・形式不明チェック
+            ' 判定ロジック
             If stockRaw = "" Or thresholdRaw = "" Then
                 Cells(checkRow, "G").Value = ""
-            ElseIf Not stockRaw Like "*#*" Then
+            ElseIf actualStock < 0 Or threshold < 0 Then
                 Cells(checkRow, "G").Value = "⚠形式不明"
-            ElseIf Not thresholdRaw Like "*#*" Then
-                Cells(checkRow, "G").Value = "⚠形式不明"
-            
-            ' ⭐ 在庫ゼロ → 補充要
             ElseIf actualStock = 0 Then
                 Cells(checkRow, "G").Value = "補充要"
                 Range("A" & checkRow & ":H" & checkRow).Interior.Color = RGB(255, 255, 153)
-
-            ' 基準未満 → 補充要
-            ElseIf actualStock < threshold Then
+            ElseIf actualStock <= threshold Then
                 Cells(checkRow, "G").Value = "補充要"
                 Range("A" & checkRow & ":H" & checkRow).Interior.Color = RGB(255, 255, 153)
-
-            ' 基準以上 → OK（色なし）
             Else
                 Cells(checkRow, "G").Value = "OK"
             End If
