@@ -111,3 +111,84 @@ End Sub
 	•	基準欄や在庫数欄に数値が含まれていない場合、「⚠形式不明」と表示されます
 	•	本フォーマットは、「今、在庫が足りているかどうか」の確認を目的としており、出庫数や入庫数の記録は行いません。使用量などを把握したい場合は、点検者が前月ファイルと比較して手動で確認してください
 	•	G列は点検後に自動的に内容が上書きされるため、点検前に必要な基準情報を確認してから入力を行ってください
+
+
+Sub LogFriendlyError(stepTitle As String, summary As String, possibleCause As String, actionHint As String)
+    Dim logMsg As String
+    logMsg = "[エラー発生]" & vbCrLf & _
+             "ステップ: " & stepTitle & vbCrLf & _
+             "内容: " & summary & vbCrLf & _
+             "時間: " & Format(Now, "yyyy/mm/dd HH:mm:ss") & vbCrLf & _
+             "可能な原因: " & possibleCause & vbCrLf & _
+             "対応方法: " & actionHint
+
+    Call WriteLog(logMsg)
+
+    MsgBox summary & vbCrLf & _
+           "詳細はログをご確認ください。" & vbCrLf & _
+           "対応方法: " & actionHint, vbCritical, "処理中断"
+End Sub
+
+fileName1 = Dir(pathDaily & "\①工数集計_定時作業チェックシート_*" & yyyymm & "*.xlsx")
+If fileName1 = "" Then
+    Call LogFriendlyError( _
+        "Step2：定時チェック読込み", _
+        "定時作業チェックファイルが見つかりません: " & yyyymm, _
+        "ファイルがまだ準備されていないか、ファイル名が変更された可能性があります。", _
+        "正しいフォルダとファイル名を確認してください。" _
+    )
+    Exit Sub
+End If
+
+If fileName2 = "" Then
+    Call LogFriendlyError( _
+        "Step2：定時外ファイル読込み", _
+        "②ファイルが見つかりません: " & yyyymm, _
+        "ファイル名が変更されたか、対象月のファイルが未作成の可能性があります。", _
+        "日報フォルダを確認してください。" _
+    )
+End If
+
+If 工数Map.exists(工数番号) Then
+    ' 正常贴值
+ElseIf 工数番号 <> "" Then
+    Call LogFriendlyError( _
+        "Step3：工数番号貼り付け", _
+        "工数番号「" & 工数番号 & "」がマスタに見つかりませんでした。", _
+        "「工数取得-都度対応項目（時間）」シートに未登録の可能性があります。", _
+        "I列に該当の工数番号があるか確認してください。" _
+    )
+End If
+
+If 稼働率 < 95 Or 稼働率 > 100 Then
+    Call LogFriendlyError( _
+        "Step5：稼働率確認", _
+        "稼働率が基準値（95〜100%）の範囲外です。現在：" & Format(稼働率, "0.0") & "％", _
+        "工数の貼り付け漏れや、基準時間（H10）の設定ミスの可能性があります。", _
+        "「工数取得-都度対応項目（時間）」シートを確認してください。" _
+    )
+End If
+
+Call LogFriendlyError("Step1：対象フォルダ確認", "フォルダが見つかりません: " & pathDaily, _
+                      "対象月のフォルダが未作成、またはパスに誤りがある可能性があります。", _
+                      "指定フォルダを確認してください。不明な場合は担当者にご確認ください。")
+Exit Sub
+
+Call LogFriendlyError("Step4：勤務割表取得", "勤務割表ファイルが見つかりません。", _
+                      "対象年度のフォルダやファイル名が間違っている可能性があります。", _
+                      "フォルダ: " & pathShiftBase & " を確認してください。")
+Exit Sub
+
+Call LogFriendlyError("Step4：残業時間シート確認", "対象シートが見つかりません: " & sheetName, _
+                      "ファイルの中に対象年月のシートが存在しない可能性があります。", _
+                      "残業時間管理表を開いて、シート名をご確認ください。")
+wbOT.Close False
+Exit Sub
+
+If fileNameSource = "" Then
+    Call LogFriendlyError("Step6：原紙ファイル確認", "原紙ファイルが見つかりません: 月次工数集計シート" & yyyymm, _
+                          "保存先にファイルが存在しない、または保存に失敗している可能性があります。", _
+                          "作成済フォルダを確認してください。")
+    Exit Sub
+End If
+
