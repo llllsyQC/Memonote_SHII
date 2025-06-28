@@ -192,3 +192,10 @@ If fileNameSource = "" Then
     Exit Sub
 End If
 
+
+Call LogFriendlyError( _
+    "メイン処理", _
+    "予期しないエラーが発生しました：" & Err.Description, _
+    "VBA実行中に予期しない例外が発生しました。", _
+    "エラー内容とログを確認し、必要であればシステム担当者に連絡してください。" _
+)
