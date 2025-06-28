@@ -18,13 +18,19 @@ Private Sub Worksheet_Change(ByVal Target As Range)
             actualStock = Val(stockRaw)
             threshold = Val(thresholdRaw)
 
-            ' 数字らしきものが1つも含まれていない場合にエラーとする memo: 「箱だけ」などを排除
+            ' memo: 数字が全く含まれない場合は形式不明
             If stockRaw = "" Or thresholdRaw = "" Then
                 Cells(checkRow, "G").Value = ""
             ElseIf Not stockRaw Like "*#*" Then
                 Cells(checkRow, "G").Value = "⚠形式不明"
             ElseIf Not thresholdRaw Like "*#*" Then
                 Cells(checkRow, "G").Value = "⚠形式不明"
+            
+            ' ⭐ 0個なら無条件で補充要 memo: 在庫が0なら絶対補充対象
+            ElseIf actualStock = 0 Then
+                Cells(checkRow, "G").Value = "補充要"
+
+            ' 基準未満の場合も補充要
             ElseIf actualStock < threshold Then
                 Cells(checkRow, "G").Value = "補充要"
             Else
