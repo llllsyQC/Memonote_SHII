@@ -411,7 +411,7 @@ End Sub
 
 Sub Step6_保存処理(yyyymm As String)
     Dim pathSave As String
-    pathSave = "\\bbvcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06_日報\06.50 定時_工数集計\202504工数ルール改定マクロ修正中\作成済\"
+    pathSave = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06．日報\06.50 定時_工数集計\202504工数ルール改定\マクロ修正中\作成済\"
 
     Application.DisplayAlerts = False
     ThisWorkbook.SaveAs Filename:=pathSave & "月次工数集計シート" & yyyymm & ".xlsm", _
@@ -440,13 +440,13 @@ Sub Process_Ver52(yyyymm As String, 年 As String, 月 As String)
     Dim wsTarget As Worksheet, wsSource As Worksheet
     Dim pathVer52 As String, pathTemplate As String
     Dim fileNameSource As String, newfileName As String
-    Dim yyy As String
+    Dim yy As String
 
-    ' 一度定義（ログで使われる）
-    pathVer52 = "\\bbvcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\14.定例会\編集用資料\【原紙】IDCF工数控え用マクロファイル\"
-    pathTemplate = "\\bbvcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06.日報\06.50 定時_工数集計\202504工数ルール改定マクロ修正中\作成済\"
+    ' パス定義（ログで使われる）
+    pathVer52 = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\14．定例会\編集用資料\【原紙】IDCF工数提出用マクロファイル\"
+    pathTemplate = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06．日報\06.50 定時_工数集計\202504工数ルール改定\マクロ修正中\作成済\"
     ' === 原紙ファイルの読み込み ===
-    Set wbVer52 = Workbooks.Open(pathVer52 & "工数取得Ver.5.2(大宮)" & yyyymm & ".xlsm")
+    Set wbVer52 = Workbooks.Open(pathVer52 & "工数取得Ver.5.2(大宮)yymm.xlsm")
     Set wsTarget = wbVer52.Worksheets("都度対応項目（時間）")
     wsTarget.Range("I6").Value = 年
     wsTarget.Range("I7").Value = 月
@@ -461,27 +461,23 @@ Sub Process_Ver52(yyyymm As String, 年 As String, 月 As String)
     ' === H10/H14/H18/H22 の数値転記 ===
     With wsTarget
         .Range("H10").NumberFormat = "[h]:mm"
-        .Range("H10").Value = ThisWorkbook.Sheets("工数取得-都度対応項目（時間」") _
-            .Range("H10").Value
+        .Range("H10").Value = ThisWorkbook.Sheets("工数取得-都度対応項目（時間）").Range("H10").Value
 
         .Range("H14").NumberFormat = "[h]:mm"
-        .Range("H14").Value = ThisWorkbook.Sheets("工数取得-都度対応項目（時間）") _
-            .Range("H14").Value
+        .Range("H14").Value = ThisWorkbook.Sheets("工数取得-都度対応項目（時間）").Range("H14").Value
 
         .Range("H18").NumberFormat = "[h]:mm"
-        .Range("H18").Value = ThisWorkbook.Sheets("工数取得-都度対応項目（時間）") _
-            .Range("H18").Value
+        .Range("H18").Value = ThisWorkbook.Sheets("工数取得-都度対応項目（時間）").Range("H18").Value
 
         .Range("H22").NumberFormat = "[h]:mm"
-        .Range("H22").Value = ThisWorkbook.Sheets("工数取得-都度対応項目（時間）") _
-            .Range("H22").Value
+        .Range("H22").Value = ThisWorkbook.Sheets("工数取得-都度対応項目（時間）").Range("H22").Value
     End With
 
     ' === O11:EH64 → O10:EH63 転記 ===
     wsSource.Range("O11:EH64").Copy
     wsTarget.Range("O10").PasteSpecial Paste:=xlPasteValues
 
-    ' === ファイル名変更（内部分用） ===
+    ' === ファイル名変更（内部用） ===
     yy = Right(年, 2)
     newFileName = "工数取得Ver.5.2(大宮)" & yy & 月 & ".xlsm"
 
@@ -491,12 +487,12 @@ Sub Process_Ver52(yyyymm As String, 年 As String, 月 As String)
     WriteLog "工数取得Ver.5.2 転記完了：" & newFileName
 
     MsgBox "作業が完了しました。" & vbCrLf & _
-           "このファイルは一時的に " & newFileName & " に名前を変更しました。" & vbCrLf & _
+           "このファイルは一時的に '" & newFileName & "' に名前を変更しました。" & vbCrLf & _
            "必ず名前を付けて保存してください。", vbInformation, "完了"
 
-    wbSource.Close False
+    ' wbSource.Close False
 
-    ThisWorkbook.FollowHyperlink "\\bbvcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\14.定例会\編集用資料\工数取得マクロ作成済\"
+    ThisWorkbook.FollowHyperlink "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\14．定例会\編集用資料\工数取得マクロ作成済\"
     MsgBox "工数取得ver.5.2(大宮)転記完了"
 
     Exit Sub
