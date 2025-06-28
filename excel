@@ -18,7 +18,10 @@ Private Sub Worksheet_Change(ByVal Target As Range)
             actualStock = Val(stockRaw)
             threshold = Val(thresholdRaw)
 
-            ' memo: 数字が全く含まれない場合は形式不明
+            ' 行の色をリセット memo: まず全て初期化
+            Range("A" & checkRow & ":H" & checkRow).Interior.ColorIndex = xlNone
+
+            ' 空欄・形式不明チェック
             If stockRaw = "" Or thresholdRaw = "" Then
                 Cells(checkRow, "G").Value = ""
             ElseIf Not stockRaw Like "*#*" Then
@@ -26,13 +29,17 @@ Private Sub Worksheet_Change(ByVal Target As Range)
             ElseIf Not thresholdRaw Like "*#*" Then
                 Cells(checkRow, "G").Value = "⚠形式不明"
             
-            ' ⭐ 0個なら無条件で補充要 memo: 在庫が0なら絶対補充対象
+            ' ⭐ 在庫ゼロ → 補充要
             ElseIf actualStock = 0 Then
                 Cells(checkRow, "G").Value = "補充要"
+                Range("A" & checkRow & ":H" & checkRow).Interior.Color = RGB(255, 255, 153)
 
-            ' 基準未満の場合も補充要
+            ' 基準未満 → 補充要
             ElseIf actualStock < threshold Then
                 Cells(checkRow, "G").Value = "補充要"
+                Range("A" & checkRow & ":H" & checkRow).Interior.Color = RGB(255, 255, 153)
+
+            ' 基準以上 → OK（色なし）
             Else
                 Cells(checkRow, "G").Value = "OK"
             End If
