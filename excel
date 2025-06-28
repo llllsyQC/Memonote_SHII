@@ -1,0 +1,39 @@
+Private Sub Worksheet_Change(ByVal Target As Range)
+    Dim checkRow As Long
+    Dim actualStock As Double
+    Dim threshold As Double
+    Dim stockRaw As String
+    Dim thresholdRaw As String
+
+    ' 限定只对 F2:F100 的变更做出反应
+    If Not Intersect(Target, Range("F2:F100")) Is Nothing Then
+        Application.EnableEvents = False
+        
+        For Each cell In Intersect(Target, Range("F2:F100"))
+            checkRow = cell.Row
+
+            ' 原始值（包含单位等）
+            stockRaw = Trim(Cells(checkRow, "F").Value)
+            thresholdRaw = Trim(Cells(checkRow, "I").Value)
+            
+            ' 提取数值
+            actualStock = Val(stockRaw)
+            threshold = Val(thresholdRaw)
+
+            ' 判断处理逻辑
+            If stockRaw = "" Or thresholdRaw = "" Then
+                Cells(checkRow, "G").Value = ""
+            ElseIf actualStock = 0 And stockRaw <> "0" Then
+                Cells(checkRow, "G").Value = "⚠形式不明"
+            ElseIf threshold = 0 And thresholdRaw <> "0" Then
+                Cells(checkRow, "G").Value = "⚠形式不明"
+            ElseIf actualStock < threshold Then
+                Cells(checkRow, "G").Value = "補充要"
+            Else
+                Cells(checkRow, "G").Value = "OK"
+            End If
+        Next cell
+
+        Application.EnableEvents = True
+    End If
+End Sub
