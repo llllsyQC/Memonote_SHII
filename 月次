@@ -24,7 +24,7 @@ End Sub
 Sub WriteLogStep(stepCode As String, msg As String)
     On Error Resume Next
     Open gLogFilePath For Append As #1
-    Print #1, "[" & Format(Now, "yyyy/mm/dd HH:MM:SS") & "] " & stepCode & " " & msg
+    Print #1, "[" & Format(Now, "yyyy/mm/dd HH:MM:SS") & "] " & stepCode & " ？ " & msg
     Close #1
 End Sub
 
@@ -37,7 +37,7 @@ Sub WriteLog(msg As String)
 End Sub
 
 ' フォルダ存在チェック + 再帰作成
-Sub MkDirRecursive(ByVal Path As String)
+Sub MkDirRecursive(ByVal path As String)
     Dim tempPath As String, folders() As String
     Dim i As Integer
     folders = Split(path, "\")
@@ -78,7 +78,7 @@ Sub 工数集計_自動処理()
         Exit Sub
     End If
 
-    月 = InputBox("月を入力してください(例:04)")
+    月 = InputBox("月を入力してください(例:01)")
     If 月 = "" Then MsgBox "月の入力が必要です。": Exit Sub
     If Not IsNumeric(月) Or Val(月) < 1 Or Val(月) > 12 Then
         MsgBox "正しい月を1〜12の範囲で入力してください", vbExclamation
@@ -95,18 +95,17 @@ Sub 工数集計_自動処理()
     ' === フォルダ生成 ===
     pathDaily = GetTargetFolderPath(年, 月)
     If Dir(pathDaily, vbDirectory) = "" Then
-        Call ErrorRollback("", "フォルダが見つかりません: " & pathDaily)
+        Call ErrorRollback("フォルダが見つかりません: " & pathDaily)
         Exit Sub
-    End If
     End If
     Call WriteLog("対象フォルダ存在確認:" & pathDaily)
 
     ' === メイン処理 ===
     Call Import_AllSources(yyyymm, 年, 月, pathDaily)
-    Call Copy_WorkHours_工数番号(yyyymm, 年, 月)
-    Call Step5_稼働種単算資料(yyyymm)
+    Call Copy_WorkHours_By工数番号(yyyymm, 年, 月)
+    Call Step5_稼働率計算(yyyymm)
     Call Step6_保有処理(yyyymm)
-    Call Process_Ver5(yyyymm, 年, 月)
+    Call Process_Ver52(yyyymm, 年, 月)
 
     Call WriteLog("工数集計 完了：" & yyyymm)
     MsgBox "工数集計が完了しました！", vbInformation
@@ -118,8 +117,8 @@ ERR_HANDLER:
 End Sub
 Function GetTargetFolderPath(年 As String, 月 As String) As String
     Dim basePath As String
-    basePath = "\\bbvcfs.local\share4\SBM\SharePrj\六堂データセンター運用フォルダ\06_日報\06_50_定時工数\★工数ルール改定マクロ修正中\過去分\"
-    GetTargetFolderPath = basePath & "\" & 年 & "年\" & 月 & "月"
+    basePath = "\\bbwcfs.local\share4\SBM1\SharePrj\六堂データセンター運用フォルダ\06．日報\06.50 定時_工数集計\202504工数ルール改定\マクロ修正中\過去分"
+    GetTargetFolderPath = basePath & "\" & 年 & "年\" & 月 & "月\"
 End Function
 
 ' ================================
@@ -131,9 +130,9 @@ Sub Import_AllSources(yyyymm As String, 年 As String, 月 As String, pathDaily 
     Dim fileName1 As String, fileName2 As String, fileName4 As String
     Dim wb1 As Workbook, wb2 As Workbook, wb4 As Workbook
 
-    ' ① 定時作業チェックシート読込み ===
-    ' === 調査チェック
-    fileName1 = Dir(pathDaily & "\〇工数集計_定時作業チェックシート_*" & yyyymm & "*.xlsx")
+    ' ①定時作業チェックシート読込み ===
+    ' ①定時チェック
+    fileName1 = Dir(pathDaily & "\①工数集計_定時作業チェックシート_*" & yyyymm & "*.xlsx")
     If fileName1 <> "" Then
         Set wb1 = Workbooks.Open(pathDaily & "\" & fileName1)
         wb1.Worksheets("定時作業工数詳細").Columns.EntireColumn.Hidden = False
@@ -149,26 +148,26 @@ Sub Import_AllSources(yyyymm As String, 年 As String, 月 As String, pathDaily 
         wb1.Close
     End If
 
-    ' ② 定時外
-    fileName2 = Dir(pathDaily & "\〇工数集計_定時外_*" & yyyymm & ".xlsx")
+    ' ②定時外
+    fileName2 = Dir(pathDaily & "\②工数集計_定時外_*" & yyyymm & ".xlsx")
     If fileName2 <> "" Then
-        Set wb2 = Workbooks.Open(pathDaily & "\" & fileName2)
-        wb2.Worksheets("＠集計ｼｰﾄ").Range("F4:BO57").Copy
+        Set wb2 = Workbooks.Open(pathDaily & fileName2)
+        wb2.Worksheets("②集計シート").Range("F4:BO57").Copy
         ThisWorkbook.Worksheets("定時外").Range("F7").PasteSpecial xlPasteValues
         wb2.Close False
     Else
         MsgBox "②ファイルが見つかりません", vbExclamation
     End If
 
-    ' ③ 日報
-    fileName4 = Dir(pathDaily & "\〇工数集計_日報_*" & yyyymm & "*.xlsx")
+    ' ④日報
+    fileName4 = Dir(pathDaily & "\④工数集計_日報_*" & yyyymm & "*.xlsx")
     If fileName4 <> "" Then
         Set wb4 = Workbooks.Open(pathDaily & "\" & fileName4)
         wb4.Worksheets("日報").Range("F7:LC60").Copy
         ThisWorkbook.Worksheets("日報").Range("F7").PasteSpecial xlPasteValues
         wb4.Close False
     Else
-        MsgBox "③ファイルが見つかりません", vbExclamation
+        MsgBox "④ファイルが見つかりません", vbExclamation
     End If
 
     ' 年月を書き込む
@@ -193,7 +192,7 @@ Sub Copy_WorkHours_By工数番号(yyyymm As String, 年 As String, 月 As String
     Dim i As Integer, srcRow As Long
     Dim 工数番号 As String
     Dim destRow As Long
-    Dim oneDaySecCol As Long
+    Dim dayBaseCol As Long
     Dim colOffset As Long
     Dim 日勤列 As Long, 夜勤列 As Long
     Dim 日付判定セル As Range
@@ -201,7 +200,7 @@ Sub Copy_WorkHours_By工数番号(yyyymm As String, 年 As String, 月 As String
     Dim alertState As Boolean
     alertState = Application.DisplayAlerts
 
-    Set wsSrc = ThisWorkbook.Worksheets("①消し(最終)")
+    Set wsSrc = ThisWorkbook.Worksheets("0消し(最終)")
     Set wsDest = ThisWorkbook.Worksheets("工数取得-都度対応項目(時間)")
     Set 工数Map = CreateObject("Scripting.Dictionary")
 
@@ -219,30 +218,30 @@ Sub Copy_WorkHours_By工数番号(yyyymm As String, 年 As String, 月 As String
     Call WriteLog("STEP3：日別データ貼付開始")
     For i = 0 To 30
 
-        ' T：判断平日 or 休日
-        Set 日付判定セル = wsDest.Cells(11, 4 * i + 15)    ' 第一天＝0列 → 列15
+        ' 判断平日 or 休日
+        Set 日付判定セル = wsDest.Cells(11, 4 * i + 15)    ' 第一天 ＝ O列 = 列15
 
         If 日付判定セル.DisplayFormat.Interior.ColorIndex = xlNone Then
-            ' 平日 → 从 R/S 開始(偏移2)
+            ' 休日 → 从 R/S 開始(偏移2)
             colOffset = 2
         Else
-            ' 休日 → 从 P/Q 開始(偏移0)
+            ' 平日 → 从 P/Q 開始(偏移0)
             colOffset = 0
         End If
 
-        ' 起始判列と貼付
+        ' 起始列判別と貼付
         dayBaseCol = 4 * i + 15 + colOffset
 
-        ' ①消中からデータ獲得(E6:E59)
+        ' 0消中からデータ獲得(E6:E59)
         For srcRow = 6 To 59
             工数番号 = Trim(CStr(wsSrc.Cells(srcRow, "E").Value))
 
             If 工数Map.exists(工数番号) Then
                 destRow = 工数Map(工数番号)
 
-                ' 來源列：列6＝
-                ' 日勤列 = 2 * i + 6
-                ' 夜勤列 = 2 * i + 7
+                ' 來源列：F列=6
+                 日勤列 = 2 * i + 6
+                 夜勤列 = 2 * i + 7
 
                 ' 貼付日勤数据
                 With wsDest.Cells(destRow, dayBaseCol)
@@ -278,7 +277,7 @@ Sub Copy_WorkHours_By工数番号(yyyymm As String, 年 As String, 月 As String
 
     ' --- ① 勤務割表取得（H11 / H19） ---
     Dim pathShiftBase As String
-    pathShiftBase = "\\bbvcfs.local\share4\SBM\SharePrj\六堂データセンター運用フォルダ\05_ SBM社勤務シフト表\99_大宮勤怠作成自動化ファイル\勤務割表完了月分\" & fiscalYear & "年度\"
+    pathShiftBase = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\05．SBM提出物\シフト表\99．大宮勤怠作成自動化ファイル\勤務割表完了月分\" & fiscalYear & "年度\"
 
     Dim fileNameShift As String
     fileNameShift = Dir(pathShiftBase & "【大宮】" & y & "年" & Format(m, "00") & "月勤務割表*.xlsm")
@@ -305,7 +304,7 @@ Sub Copy_WorkHours_By工数番号(yyyymm As String, 年 As String, 月 As String
 
     ' --- ② 残業時間管理表取得（H15 / H23） ---
     Dim pathOvertime As String
-    pathOvertime = "\\bbvcfs.local\share4\SBM\SharePrj\六堂データセンター運用フォルダ\06_日報\06_50_定時工数\★工数ルール改定マクロ修正中\工数データ提出用加工\"
+    pathOvertime = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06．日報\06.50 定時_工数集計\202504工数ルール改定\マクロ修正中\工数データ提出用加工\"
 
     Dim wbOT As Workbook, wsOT As Worksheet
     Set wbOT = Workbooks.Open(pathOvertime & "残業時間管理表.xlsx", ReadOnly:=True)
@@ -324,8 +323,9 @@ Sub Copy_WorkHours_By工数番号(yyyymm As String, 年 As String, 月 As String
     End If
 
     Dim valH14 As Variant, valH22 As Variant
-    valH14 = wsOT.Range("A14").Value
-    valH22 = wsOT.Range("A04").Value
+    valH14 = wsOT.Range("AL4").Value
+    valH22 = wsOT.Range("AO4").Value
+    wbOT.Close False
 
     ' --- 写入本工作簿 ---
     With ThisWorkbook.Sheets("工数取得-都度対応項目（時間）")
@@ -350,18 +350,18 @@ ERR_HANDLER:
 End Sub
 
 '====================================
-'STEP5：稼働種計算（安全対策済）
+'STEP5：稼働率計算
 '==============================
-Sub Step5_稼働種計算(yyyymm As String)
+Sub Step5_稼働率計算(yyyymm As String)
 
     On Error GoTo ERR_HANDLER
-    Call WriteLog("STEP5：稼働種計算 開始")
+    Call WriteLog("STEP5：稼働率 開始")
 
     Dim ws工数 As Worksheet
     Dim sheetName As String: sheetName = "工数取得-都度対応項目（時間）"
 
     '=== シート存在確認 ===
-    Dim found As Boolean: found = False
+	  Dim found As Boolean: found = False
     Dim sh As Worksheet
     For Each sh In ThisWorkbook.Worksheets
         If sh.Name = sheetName Then
@@ -373,7 +373,7 @@ Sub Step5_稼働種計算(yyyymm As String)
 
     If Not found Then
         Call ErrorRollback("STEP5：対象シートが見つかりません → " & sheetName)
-        Exit Sub
+	      Exit Sub
     End If
 
     '=== データ取得 ===
