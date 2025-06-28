@@ -5,39 +5,33 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Dim stockRaw As String
     Dim thresholdRaw As String
 
-    ' 限定只对 F2:F100 的变更做出反应
-    If Not Intersect(Target, Range("F2:F100")) Is Nothing Then
+    ' F4:F100の変更を監視 memo: 点検欄の入力のみを対象とする
+    If Not Intersect(Target, Range("F4:F100")) Is Nothing Then
         Application.EnableEvents = False
-        
-        For Each cell In Intersect(Target, Range("F2:F100"))
+
+        For Each cell In Intersect(Target, Range("F4:F100"))
             checkRow = cell.Row
 
-            ' 原始值（包含单位等）
             stockRaw = Trim(Cells(checkRow, "F").Value)
-            thresholdRaw = Trim(Cells(checkRow, "I").Value)
-            
-            ' 提取数值
+            thresholdRaw = Trim(Cells(checkRow, "H").Value)
+
             actualStock = Val(stockRaw)
             threshold = Val(thresholdRaw)
 
-' 補充要否の判断処理
+            ' 数字らしきものが1つも含まれていない場合にエラーとする memo: 「箱だけ」などを排除
             If stockRaw = "" Or thresholdRaw = "" Then
-                ' どちらか空白の場合は判定しない memo: 空欄→結果も空欄に
                 Cells(checkRow, "G").Value = ""
-            ElseIf actualStock = 0 And stockRaw <> "0" Then
-                ' 数字として読めなかった場合は警告表示 memo: 「箱1」など Val不能時
+            ElseIf Not stockRaw Like "*#*" Then
                 Cells(checkRow, "G").Value = "⚠形式不明"
-            ElseIf threshold = 0 And thresholdRaw <> "0" Then
+            ElseIf Not thresholdRaw Like "*#*" Then
                 Cells(checkRow, "G").Value = "⚠形式不明"
             ElseIf actualStock < threshold Then
-                ' 補充基準未満 → 補充要 memo: 在庫が基準以下
                 Cells(checkRow, "G").Value = "補充要"
             Else
-                ' 基準以上 → OK
                 Cells(checkRow, "G").Value = "OK"
             End If
         Next cell
 
-        Application.EnableEvents = True  ' イベント再有効化 memo: 終了処理
+        Application.EnableEvents = True
     End If
 End Sub
