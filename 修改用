@@ -166,3 +166,52 @@ For i = 1 To lastRow
         End With
     End If
 Next i
+
+
+For i = 1 To lastRow
+    titleFound = False
+
+    ' 改行や余分なスペースを削除してタイトルテキストを取得
+    titleText = Trim(Replace(Replace(wsTarget.Cells(i, 4).Value, vbCr, ""), vbLf, ""))
+
+    ' 「【タイトル】」のような形式が含まれているかをチェック
+    If titleText Like "*【*】*" Then
+        titleFound = True
+    End If
+
+    If titleFound Then
+        timeValue = Trim(CStr(wsTarget.Cells(i + 1, 2).Value))
+        shiftType = "不明"
+        
+        If IsDate(timeValue) Then
+            Dim hourPart As Integer
+            Dim minutePart As Integer
+            Dim splitTime() As String
+
+            ' 時:分 にフォーマットして分解
+            splitTime = Split(Format(CDate(timeValue), "HH:MM"), ":")
+            hourPart = CInt(splitTime(0))
+            minutePart = CInt(splitTime(1))
+
+            ' 9:00 ～ 17:29 を「日」勤務
+            If (hourPart > 9 And hourPart < 17) _
+                Or (hourPart = 9 And minutePart >= 0) _
+                Or (hourPart = 17 And minutePart < 30) Then
+                shiftType = "日"
+            Else
+                shiftType = "夜"
+            End If
+        Else
+            hasUnknownShift = True
+        End If
+
+        ' 判定したシフトを39列目に書き込む
+        wsTarget.Cells(i, 39).Value = shiftType
+
+        ' 4列目から30列目のデータをコピーして、40列目以降に値として貼り付け
+        With wsTarget
+            .Range(.Cells(i, 4), .Cells(i, 30)).Copy
+            .Cells(i, 40).PasteSpecial Paste:=xlPasteValues
+        End With
+    End If
+Next i
