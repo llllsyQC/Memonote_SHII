@@ -62,197 +62,31 @@ Sub ErrorRollback(Optional ByVal stepCode As String = "", Optional ByVal errMsg 
     MsgBox "エラーが発生しました。" & vbCrLf & errMsg & vbCrLf & "ログを確認してください。", vbCritical, "処理
 
 
+お疲れ様です。〇〇です。
 
-英語での説明案を作成しました。
-本メールの目的は、「なぜ当該日のレポートに情報が欠けていたか」と「現在の対応状況・今後の方針」を明確に伝えることです。
-一度、元の日本語の報告内容と照らし合わせた上で、文面の妥当性やニュアンスに問題がないかご確認いただけますと幸いです。
+6月30日の工数自動転記について、ご連絡いただきありがとうございました。
+ご指摘の通り、一部の「日勤」時間帯が「夜勤」として誤判定されていた件、
+以下の通り、原因と対応を共有いたします。
 
+⸻
 
-For i = 1 To lastRow
-    titleFound = False
-    
-    ' 改行や余分なスペースを削除してタイトルテキストを取得
-    titleText = Trim(Replace(Replace(wsTarget.Cells(i, 4).Value, vbCr, ""), vbLf, ""))
-    
-    ' 「【タイトル】」のような形式が含まれているかをチェック
-    If titleText Like "*【*】*" Then
-        titleFound = True
-    End If
+■ 発生内容
+日勤対応（例：9:36など）が夜勤としてカウントされていた。
 
-    If titleFound Then
-        timeValue = Trim(CStr(wsTarget.Cells(i + 1, 2).Value))
-        shiftType = "不明"    ' 初期値は「不明」
-        actualTime = 0
-        
-        ' 時刻が正しい形式かどうかをチェック
-        If IsDate(timeValue) Then
-            actualTime = TimeValue(timeValue)
-            
-            ' 日勤の時間帯（9:00 ～ 17:30）を定義
-            Dim dayShiftStart As Date
-            Dim dayShiftEnd As Date
-            dayShiftStart = TimeSerial(9, 0, 0)
-            dayShiftEnd = TimeSerial(17, 30, 0)
+■ 原因（簡易説明）
+転記ロジック上、時間は Excel 上の小数値（例：9:36 → 0.4）として比較されますが、
+この 0.4 はコンピュータ内部では実際には 0.3999999… という形で処理されており、
+条件（>= 0.375）にギリギリ届かず「夜勤」と誤判定される事象が発生していました。
 
-            ' 実際の時間に基づいて勤務シフトを判定
-            If actualTime >= dayShiftStart And actualTime < dayShiftEnd Then
-                shiftType = "日"
-            Else
-                shiftType = "夜"
-            End If
-        Else
-            hasUnknownShift = True
-        End If
+■ 対応内容
+判定ロジックを見直し、**0.375（9:00）以上、17:30未満（0.72951）を「日勤」**と
+正しく認識するように修正済みです。
 
-        ' 判定したシフトを39列目に書き込む
-        wsTarget.Cells(i, 39).Value = shiftType
+⸻
 
-        ' 4列目から30列目のデータをコピーして、40列目以降に値として貼り付け
-        With wsTarget
-            .Range(.Cells(i, 4), .Cells(i, 30)).Copy
-            .Cells(i, 40).PasteSpecial Paste:=xlPasteValues
-        End With
-    End If
-Next i
+再発防止のため、今後のロジック処理では
+小数比較時の精度にも注意を払ってまいります。
 
+このたびはご迷惑をおかけし、大変申し訳ございませんでした。
+引き続きどうぞよろしくお願いいたします。
 
-
-For i = 1 To lastRow
-    titleFound = False
-
-    ' 改行や余分なスペースを削除してタイトルテキストを取得
-    titleText = Trim(Replace(Replace(wsTarget.Cells(i, 4).Value, vbCr, ""), vbLf, ""))
-
-    ' 「【タイトル】」のような形式が含まれているかをチェック
-    If titleText Like "*【*】*" Then
-        titleFound = True
-    End If
-
-    If titleFound Then
-        ' 次の行の2列目にある時刻データを取得
-        timeValue = Trim(CStr(wsTarget.Cells(i + 1, 2).Value))
-        shiftType = "不明"    ' 初期値を「不明」に設定
-        actualTime = 0
-
-        ' 時刻データが正しい形式かどうかをチェック
-        If IsDate(timeValue) Then
-            actualTime = TimeValue(timeValue)
-
-            ' 日勤時間帯（9:00〜17:30）を定義
-            Dim dayShiftStart As Date: dayShiftStart = TimeSerial(9, 0, 0)
-            Dim dayShiftEnd As Date: dayShiftEnd = TimeSerial(17, 30, 0)
-
-            ' 実際の時間に基づいてシフトを判定
-            If actualTime >= dayShiftStart And actualTime < dayShiftEnd Then
-                shiftType = "日"
-            Else
-                shiftType = "夜"
-            End If
-        Else
-            ' 不正な時間の場合
-            hasUnknownShift = True
-
-            ' （任意）デバッグ出力：不正な時刻データを表示
-            Debug.Print "行 " & i & "：無効な時刻 [" & timeValue & "]"
-        End If
-
-        ' 判定したシフトを39列目に書き込む
-        wsTarget.Cells(i, 39).Value = shiftType
-
-        ' 4列目から30列目のデータをコピーして、40列目以降に値として貼り付け
-        With wsTarget
-            .Range(.Cells(i, 4), .Cells(i, 30)).Copy
-            .Cells(i, 40).PasteSpecial Paste:=xlPasteValues
-        End With
-    End If
-Next i
-
-
-For i = 1 To lastRow
-    titleFound = False
-
-    ' 改行や余分なスペースを削除してタイトルテキストを取得
-    titleText = Trim(Replace(Replace(wsTarget.Cells(i, 4).Value, vbCr, ""), vbLf, ""))
-
-    ' 「【タイトル】」のような形式が含まれているかをチェック
-    If titleText Like "*【*】*" Then
-        titleFound = True
-    End If
-
-    If titleFound Then
-        timeValue = Trim(CStr(wsTarget.Cells(i + 1, 2).Value))
-        shiftType = "不明"
-        
-        If IsDate(timeValue) Then
-            Dim hourPart As Integer
-            Dim minutePart As Integer
-            Dim splitTime() As String
-
-            ' 時:分 にフォーマットして分解
-            splitTime = Split(Format(CDate(timeValue), "HH:MM"), ":")
-            hourPart = CInt(splitTime(0))
-            minutePart = CInt(splitTime(1))
-
-            ' 9:00 ～ 17:29 を「日」勤務
-            If (hourPart > 9 And hourPart < 17) _
-                Or (hourPart = 9 And minutePart >= 0) _
-                Or (hourPart = 17 And minutePart < 30) Then
-                shiftType = "日"
-            Else
-                shiftType = "夜"
-            End If
-        Else
-            hasUnknownShift = True
-        End If
-
-        ' 判定したシフトを39列目に書き込む
-        wsTarget.Cells(i, 39).Value = shiftType
-
-        ' 4列目から30列目のデータをコピーして、40列目以降に値として貼り付け
-        With wsTarget
-            .Range(.Cells(i, 4), .Cells(i, 30)).Copy
-            .Cells(i, 40).PasteSpecial Paste:=xlPasteValues
-        End With
-    End If
-Next i
-
-
-For i = 1 To lastRow
-    titleFound = False
-
-    ' 改行や余分なスペースを削除してタイトルテキストを取得
-    titleText = Trim(Replace(Replace(wsTarget.Cells(i, 4).Value, vbCr, ""), vbLf, ""))
-
-    ' 「【タイトル】」のような形式が含まれているかをチェック
-    If titleText Like "*【*】*" Then
-        titleFound = True
-    End If
-
-    If titleFound Then
-        shiftType = "不明"
-        actualTime = 0
-
-        ' 次の行の2列目の値（時間）を取得（すでに小数として存在）
-        If IsNumeric(wsTarget.Cells(i + 1, 2).Value) Then
-            actualTime = CDbl(wsTarget.Cells(i + 1, 2).Value)
-
-            ' 日勤範囲：9:00〜17:30（=0.7291667）まで
-            If actualTime >= 0.375 And actualTime < 0.7295139 Then
-                shiftType = "日"
-            Else
-                shiftType = "夜"
-            End If
-        Else
-            hasUnknownShift = True
-        End If
-
-        ' 判定したシフトを39列目に書き込む
-        wsTarget.Cells(i, 39).Value = shiftType
-
-        ' 4列目から30列目のデータをコピーして、40列目以降に値として貼り付け
-        With wsTarget
-            .Range(.Cells(i, 4), .Cells(i, 30)).Copy
-            .Cells(i, 40).PasteSpecial Paste:=xlPasteValues
-        End With
-    End If
-Next i
