@@ -215,3 +215,44 @@ For i = 1 To lastRow
         End With
     End If
 Next i
+
+
+For i = 1 To lastRow
+    titleFound = False
+
+    ' 改行や余分なスペースを削除してタイトルテキストを取得
+    titleText = Trim(Replace(Replace(wsTarget.Cells(i, 4).Value, vbCr, ""), vbLf, ""))
+
+    ' 「【タイトル】」のような形式が含まれているかをチェック
+    If titleText Like "*【*】*" Then
+        titleFound = True
+    End If
+
+    If titleFound Then
+        shiftType = "不明"
+        actualTime = 0
+
+        ' 次の行の2列目の値（時間）を取得（すでに小数として存在）
+        If IsNumeric(wsTarget.Cells(i + 1, 2).Value) Then
+            actualTime = CDbl(wsTarget.Cells(i + 1, 2).Value)
+
+            ' 日勤範囲：9:00〜17:30（=0.7291667）まで
+            If actualTime >= 0.375 And actualTime < 0.7295139 Then
+                shiftType = "日"
+            Else
+                shiftType = "夜"
+            End If
+        Else
+            hasUnknownShift = True
+        End If
+
+        ' 判定したシフトを39列目に書き込む
+        wsTarget.Cells(i, 39).Value = shiftType
+
+        ' 4列目から30列目のデータをコピーして、40列目以降に値として貼り付け
+        With wsTarget
+            .Range(.Cells(i, 4), .Cells(i, 30)).Copy
+            .Cells(i, 40).PasteSpecial Paste:=xlPasteValues
+        End With
+    End If
+Next i
