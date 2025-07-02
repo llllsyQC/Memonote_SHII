@@ -1,3 +1,4 @@
+
 ' ================================
 ' 📦 Module: modLogUtility
 ' ローカルログ出力 + エラー回復支援（Step対応）
@@ -65,3 +66,51 @@ Sub ErrorRollback(Optional ByVal stepCode As String = "", Optional ByVal errMsg 
 英語での説明案を作成しました。
 本メールの目的は、「なぜ当該日のレポートに情報が欠けていたか」と「現在の対応状況・今後の方針」を明確に伝えることです。
 一度、元の日本語の報告内容と照らし合わせた上で、文面の妥当性やニュアンスに問題がないかご確認いただけますと幸いです。
+
+
+For i = 1 To lastRow
+    titleFound = False
+    
+    ' 改行や余分なスペースを削除してタイトルテキストを取得
+    titleText = Trim(Replace(Replace(wsTarget.Cells(i, 4).Value, vbCr, ""), vbLf, ""))
+    
+    ' 「【タイトル】」のような形式が含まれているかをチェック
+    If titleText Like "*【*】*" Then
+        titleFound = True
+    End If
+
+    If titleFound Then
+        timeValue = Trim(CStr(wsTarget.Cells(i + 1, 2).Value))
+        shiftType = "不明"    ' 初期値は「不明」
+        actualTime = 0
+        
+        ' 時刻が正しい形式かどうかをチェック
+        If IsDate(timeValue) Then
+            actualTime = TimeValue(timeValue)
+            
+            ' 日勤の時間帯（9:00 ～ 17:30）を定義
+            Dim dayShiftStart As Date
+            Dim dayShiftEnd As Date
+            dayShiftStart = TimeSerial(9, 0, 0)
+            dayShiftEnd = TimeSerial(17, 30, 0)
+
+            ' 実際の時間に基づいて勤務シフトを判定
+            If actualTime >= dayShiftStart And actualTime < dayShiftEnd Then
+                shiftType = "日"
+            Else
+                shiftType = "夜"
+            End If
+        Else
+            hasUnknownShift = True
+        End If
+
+        ' 判定したシフトを39列目に書き込む
+        wsTarget.Cells(i, 39).Value = shiftType
+
+        ' 4列目から30列目のデータをコピーして、40列目以降に値として貼り付け
+        With wsTarget
+            .Range(.Cells(i, 4), .Cells(i, 30)).Copy
+            .Cells(i, 40).PasteSpecial Paste:=xlPasteValues
+        End With
+    End If
+Next i
