@@ -114,3 +114,55 @@ For i = 1 To lastRow
         End With
     End If
 Next i
+
+
+
+For i = 1 To lastRow
+    titleFound = False
+
+    ' 改行や余分なスペースを削除してタイトルテキストを取得
+    titleText = Trim(Replace(Replace(wsTarget.Cells(i, 4).Value, vbCr, ""), vbLf, ""))
+
+    ' 「【タイトル】」のような形式が含まれているかをチェック
+    If titleText Like "*【*】*" Then
+        titleFound = True
+    End If
+
+    If titleFound Then
+        ' 次の行の2列目にある時刻データを取得
+        timeValue = Trim(CStr(wsTarget.Cells(i + 1, 2).Value))
+        shiftType = "不明"    ' 初期値を「不明」に設定
+        actualTime = 0
+
+        ' 時刻データが正しい形式かどうかをチェック
+        If IsDate(timeValue) Then
+            actualTime = TimeValue(timeValue)
+
+            ' 日勤時間帯（9:00〜17:30）を定義
+            Dim dayShiftStart As Date: dayShiftStart = TimeSerial(9, 0, 0)
+            Dim dayShiftEnd As Date: dayShiftEnd = TimeSerial(17, 30, 0)
+
+            ' 実際の時間に基づいてシフトを判定
+            If actualTime >= dayShiftStart And actualTime < dayShiftEnd Then
+                shiftType = "日"
+            Else
+                shiftType = "夜"
+            End If
+        Else
+            ' 不正な時間の場合
+            hasUnknownShift = True
+
+            ' （任意）デバッグ出力：不正な時刻データを表示
+            Debug.Print "行 " & i & "：無効な時刻 [" & timeValue & "]"
+        End If
+
+        ' 判定したシフトを39列目に書き込む
+        wsTarget.Cells(i, 39).Value = shiftType
+
+        ' 4列目から30列目のデータをコピーして、40列目以降に値として貼り付け
+        With wsTarget
+            .Range(.Cells(i, 4), .Cells(i, 30)).Copy
+            .Cells(i, 40).PasteSpecial Paste:=xlPasteValues
+        End With
+    End If
+Next i
