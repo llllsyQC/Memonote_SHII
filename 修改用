@@ -121,3 +121,32 @@ Sub ErrorRollback(Optional ByVal stepCode As String = "", Optional ByVal errMsg 
         Shell "explorer.exe """ & logFolder & """", vbNormalFocus
     End If
 End Sub
+
+
+' --- 残業時間管理表取得（H15 / H23） ---
+Dim pathOvertime As String
+pathOvertime = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06．日報\06.50 定時_工数集計\202504工数ルール改定\マクロ修正中\工数データ提出用加工\"
+
+Dim wbOT As Workbook, wsOT As Worksheet
+Dim sheetName As String
+sheetName = yyyymm & "残業時間"
+
+On Error Resume Next
+Set wbOT = Workbooks.Open(pathOvertime & "残業時間管理表.xlsx", ReadOnly:=True)
+On Error GoTo ERR_HANDLER
+
+If wbOT Is Nothing Then
+    Call ErrorRollback("STEP4", "残業時間管理表ファイルが開けません。パスを確認してください：" & pathOvertime)
+    Exit Sub
+End If
+
+On Error Resume Next
+Set wsOT = wbOT.Sheets(sheetName)
+On Error GoTo ERR_HANDLER
+
+If wsOT Is Nothing Then
+    wbOT.Close False
+    Call ErrorRollback("STEP4", "残業時間管理表のシートが見つかりません：" & sheetName)
+    Exit Sub
+End If
+
