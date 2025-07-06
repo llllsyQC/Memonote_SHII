@@ -90,3 +90,34 @@ Sub ErrorRollback(Optional ByVal stepCode As String = "", Optional ByVal errMsg 
 このたびはご迷惑をおかけし、大変申し訳ございませんでした。
 引き続きどうぞよろしくお願いいたします。
 
+
+' エラーロールバック処理（ログ出力＋メッセージ表示＋ログフォルダを開く）
+Sub ErrorRollback(Optional ByVal stepCode As String = "", Optional ByVal errMsg As String = "")
+    On Error Resume Next
+    gHasErrorOccurred = True
+
+    ' エラーログ出力
+    If errMsg <> "" Then
+        If stepCode <> "" Then
+            WriteLogStep stepCode, "エラー発生: " & errMsg
+        Else
+            WriteLog "エラー発生: " & errMsg
+        End If
+    End If
+
+    ' メッセージ構築
+    Dim msg As String
+    msg = "処理中にエラーが発生しました。" & vbCrLf & vbCrLf & _
+          "【エラー内容】" & vbCrLf & errMsg & vbCrLf & vbCrLf & _
+          "詳細は以下のログファイルをご確認ください：" & vbCrLf & gLogFilePath
+
+    ' エラーメッセージ表示
+    MsgBox msg, vbCritical, "処理中断"
+
+    ' ログファイルの保存先フォルダを自動で開く
+    If gLogFilePath <> "" Then
+        Dim logFolder As String
+        logFolder = Left(gLogFilePath, InStrRev(gLogFilePath, "\") - 1)
+        Shell "explorer.exe """ & logFolder & """", vbNormalFocus
+    End If
+End Sub
