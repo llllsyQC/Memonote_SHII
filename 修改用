@@ -152,3 +152,20 @@ If wsOT Is Nothing Then
     Call ErrorRollback("STEP4", "残業時間管理表に指定されたシートが存在しません：" & sheetName)
     Exit Function
 End If
+
+
+If IsEmpty(valH10) Or IsEmpty(valH18) Then
+    Dim msg As String
+    msg = "■勤務時間データ取得エラー" & vbCrLf
+    If IsEmpty(valH10) Then msg = msg & "・総勤務時間 が見つかりませんでした。" & vbCrLf
+    If IsEmpty(valH18) Then msg = msg & "・総平日日勤務時間 が見つかりませんでした。" & vbCrLf
+
+    ' エラーメッセージ表示
+    MsgBox msg, vbCritical, "エラー"
+
+    ' ログ出力
+    Call OutputLog("勤務時間データ取得エラー：" & Replace(msg, vbCrLf, " / "))
+
+    ' 必要に応じて処理を中断
+    Exit Function
+End If
