@@ -125,33 +125,27 @@ End Sub
 
 Dim pathOvertime As String
 Dim fullPath As String
-pathOvertime = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06．日報\06.50 定時_工数集計\202504工数ルール改定\マクロ修正中\工数データ提出用加工\"
-fullPath = pathOvertime & "残業時間管理表.xlsx"
-
 Dim wbOT As Workbook, wsOT As Worksheet
 Dim sheetName As String
+
+pathOvertime = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\06．日報\06.50 定時_工数集計\202504工数ルール改定\マクロ修正中\工数データ提出用加工\"
+fullPath = pathOvertime & "残業時間管理表.xlsx"
 sheetName = yyyymm & "残業時間"
 
-' === ファイル存在チェック ===
-If Dir(fullPath) = "" Then
-    Call ErrorRollback("STEP4", "残業時間管理表ファイルが存在しません：" & fullPath)
-    Exit Function
-End If
-
-' === ファイルオープン ===
+' === ファイルを開く（存在確認も兼ねる）===
 On Error Resume Next
 Set wbOT = Workbooks.Open(fullPath, ReadOnly:=True)
-On Error GoTo ERR_HANDLER
+On Error GoTo 0
 
 If wbOT Is Nothing Then
-    Call ErrorRollback("STEP4", "残業時間管理表ファイルを開けません。共有状態やアクセス権をご確認ください：" & fullPath)
+    Call ErrorRollback("STEP4", "残業時間管理表ファイルが開けません。パスやアクセス権をご確認ください：" & fullPath)
     Exit Function
 End If
 
-' === シート存在チェック ===
+' === 指定されたシートが存在するか確認 ===
 On Error Resume Next
 Set wsOT = wbOT.Sheets(sheetName)
-On Error GoTo ERR_HANDLER
+On Error GoTo 0
 
 If wsOT Is Nothing Then
     wbOT.Close False
