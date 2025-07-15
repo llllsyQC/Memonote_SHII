@@ -39,19 +39,22 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Dim checkRow As Long
     Dim cell As Range
 
-    ' F4:F100 だけを対象（チェック欄の列）
+    ' チェック欄（F列）への入力が対象
     If Not Intersect(Target, Range("F4:F100")) Is Nothing Then
         Application.EnableEvents = False
 
         For Each cell In Intersect(Target, Range("F4:F100"))
             checkRow = cell.Row
 
-            ' 背景色リセット（A～H列）
-            Range("A" & checkRow & ":H" & checkRow).Interior.ColorIndex = xlNone
+            ' 背景色リセット（A～L列）
+            Range("A" & checkRow & ":L" & checkRow).Interior.ColorIndex = xlNone
 
-            ' 値が "0" の場合、背景色をつける
+            ' 値が"0"の場合
             If Trim(cell.Value) = "0" Then
-                Range("A" & checkRow & ":H" & checkRow).Interior.Color = RGB(255, 255, 153)
+                ' 行を黄色に
+                Range("A" & checkRow & ":L" & checkRow).Interior.Color = RGB(255, 255, 153)
+                ' E列に「補充要」と表示
+                Cells(checkRow, "E").Value = "補充要"
             End If
         Next cell
 
