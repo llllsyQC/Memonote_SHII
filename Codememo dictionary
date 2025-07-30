@@ -1,7 +1,7 @@
 Sub UpdateConsumablesColors()
 
     Dim ws As Worksheet
-    Set ws = ThisWorkbook.Sheets("チェックリスト") ' シート名を実際の名前に変更してください
+    Set ws = ThisWorkbook.Sheets("チェックリスト") ' シート名を適宜修正
 
     Dim lastRow As Long
     lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
@@ -10,36 +10,33 @@ Sub UpdateConsumablesColors()
     Dim Evalue As Variant
     Dim Hvalue As Variant
     Dim col As Long
-    Dim itemNo As Long
-    Dim specialItemNos As Variant
-
-    ' 感覚判断が必要な項目番号一覧（No列の値）
-    specialItemNos = Array(7, 8, 9, 10, 11, 12, _
-                           30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, _
-                           55, 56, 57)
 
     For row = 2 To lastRow
-        itemNo = ws.Cells(row, 1).Value ' A列（No列）の値を取得
         Evalue = ws.Cells(row, "E").Value ' 実在庫数
         Hvalue = ws.Cells(row, "H").Value ' 最低必要数
 
         For col = 4 To 7 ' D列〜G列を処理
-            If IsInArray(itemNo, specialItemNos) Then
-                ' 感覚判断項目の場合
+            ' 行番号によって感覚判定か数値比較かを分岐
+            If (row >= 10 And row <= 15) Or _
+               (row >= 30 And row <= 46) Or _
+               (row >= 55 And row <= 57) Then
+
+                ' 感覚判定行（0/1で処理）
                 If Evalue = 0 Then
                     ws.Cells(row, col).Interior.Color = RGB(255, 255, 0) ' 黄色（補充必要）
                 ElseIf Evalue = 1 Then
                     ws.Cells(row, col).Interior.ColorIndex = xlNone ' 白（補充不要）
                 Else
-                    ws.Cells(row, col).Interior.ColorIndex = xlNone ' 白（補充不要）
+                    ws.Cells(row, col).Interior.ColorIndex = xlNone ' 白（その他）
                 End If
+
             Else
-                ' 通常の数値比較を行う項目
+                ' 通常の数値比較ロジック
                 If IsNumeric(Evalue) And IsNumeric(Hvalue) Then
                     If Evalue < Hvalue Then
                         ws.Cells(row, col).Interior.Color = RGB(255, 255, 0) ' 黄色（不足）
                     ElseIf Evalue = Hvalue Then
-                        ws.Cells(row, col).Interior.Color = RGB(144, 238, 144) ' 緑（ちょうど）
+                        ws.Cells(row, col).Interior.Color = RGB(144, 238, 144) ' 緑（ぴったり）
                     Else
                         ws.Cells(row, col).Interior.ColorIndex = xlNone ' 白（十分）
                     End If
@@ -51,15 +48,3 @@ Sub UpdateConsumablesColors()
     Next row
 
 End Sub
-
-' 配列内に指定の値が含まれているかを確認する関数
-Function IsInArray(val As Variant, arr As Variant) As Boolean
-    Dim i As Long
-    For i = LBound(arr) To UBound(arr)
-        If arr(i) = val Then
-            IsInArray = True
-            Exit Function
-        End If
-    Next i
-    IsInArray = False
-End Function
