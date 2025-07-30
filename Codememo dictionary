@@ -13,28 +13,28 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         r = cell.Row
         isSensoryRow = (r >= 10 And r <= 15) Or (r >= 30 And r <= 46) Or (r >= 55 And r <= 57)
 
-        ' ✅ E列为空 → 设淡蓝色，并清除 D～G 背景色
+        ' ✅ E列为空 → E设为淡蓝，D・F・G清空颜色
         If cell.Formula = "" Then
             cell.Interior.Color = RGB(221, 235, 247) ' E列 → 淡蓝
-            For i = 4 To 7
-                Me.Cells(r, i).Interior.ColorIndex = xlNone ' D～G → 清除颜色
-            Next i
+            Me.Cells(r, 4).Interior.ColorIndex = xlNone ' D列清空
+            Me.Cells(r, 6).Interior.ColorIndex = xlNone ' F列清空
+            Me.Cells(r, 7).Interior.ColorIndex = xlNone ' G列清空
             GoTo SkipRow
         Else
-            ' 只有在有值时才清除 E列颜色
-            cell.Interior.ColorIndex = xlNone
+            cell.Interior.ColorIndex = xlNone ' E列有值 → 清除背景色
         End If
 
         valE = Val(cell.Value)
         valH = Val(Me.Cells(r, "H").Value)
 
+        ' D～G列按逻辑上色
         For i = 4 To 7
             With Me.Cells(r, i).Interior
                 If isSensoryRow Then
                     If valE = 0 Then
                         .Color = RGB(255, 255, 0) ' 黄色
                     Else
-                        .ColorIndex = xlNone ' 无色
+                        .ColorIndex = xlNone
                     End If
                 Else
                     If valE < valH Then
@@ -42,7 +42,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                     ElseIf valE = valH Then
                         .Color = RGB(144, 238, 144) ' 绿色
                     Else
-                        .ColorIndex = xlNone ' 无色
+                        .ColorIndex = xlNone
                     End If
                 End If
             End With
