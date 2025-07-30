@@ -1,7 +1,7 @@
-Sub UpdateConsumablesColors()
+Private Sub Worksheet_Change(ByVal Target As Range)
 
     Dim ws As Worksheet
-    Set ws = ThisWorkbook.Sheets("チェックリスト") ' シート名を適宜修正
+    Set ws = Me ' 現在のシート
 
     Dim lastRow As Long
     lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
@@ -11,40 +11,44 @@ Sub UpdateConsumablesColors()
     Dim Hvalue As Variant
     Dim col As Long
 
-    For row = 2 To lastRow
-        Evalue = ws.Cells(row, "E").Value ' 実在庫数
-        Hvalue = ws.Cells(row, "H").Value ' 最低必要数
+    ' 変更されたセルがE列（在庫数）でなければ無視
+    If Intersect(Target, ws.Range("E2:E" & lastRow)) Is Nothing Then Exit Sub
 
-        For col = 4 To 7 ' D列〜G列を処理
-            ' 行番号によって感覚判定か数値比較かを分岐
-            If (row >= 10 And row <= 15) Or _
-               (row >= 30 And row <= 46) Or _
-               (row >= 55 And row <= 57) Then
+    ' 変更があった行を取得
+    row = Target.Row
 
-                ' 感覚判定行（0/1で処理）
-                If Evalue = 0 Then
-                    ws.Cells(row, col).Interior.Color = RGB(255, 255, 0) ' 黄色（補充必要）
-                ElseIf Evalue = 1 Then
-                    ws.Cells(row, col).Interior.ColorIndex = xlNone ' 白（補充不要）
-                Else
-                    ws.Cells(row, col).Interior.ColorIndex = xlNone ' 白（その他）
-                End If
+    ' E列とH列の値を取得
+    Evalue = ws.Cells(row, "E").Value
+    Hvalue = ws.Cells(row, "H").Value
 
+    For col = 4 To 7 ' D列〜G列を処理
+        If (row >= 10 And row <= 15) Or _
+           (row >= 30 And row <= 46) Or _
+           (row >= 55 And row <= 57) Then
+
+            ' 感覚判定行（0/1で処理）
+            If Evalue = 0 Then
+                ws.Cells(row, col).Interior.Color = RGB(255, 255, 0) ' 黄色
+            ElseIf Evalue = 1 Then
+                ws.Cells(row, col).Interior.ColorIndex = xlNone ' 白
             Else
-                ' 通常の数値比較ロジック
-                If IsNumeric(Evalue) And IsNumeric(Hvalue) Then
-                    If Evalue < Hvalue Then
-                        ws.Cells(row, col).Interior.Color = RGB(255, 255, 0) ' 黄色（不足）
-                    ElseIf Evalue = Hvalue Then
-                        ws.Cells(row, col).Interior.Color = RGB(144, 238, 144) ' 緑（ぴったり）
-                    Else
-                        ws.Cells(row, col).Interior.ColorIndex = xlNone ' 白（十分）
-                    End If
-                Else
-                    ws.Cells(row, col).Interior.ColorIndex = xlNone ' 白（比較不可）
-                End If
+                ws.Cells(row, col).Interior.ColorIndex = xlNone ' 白
             End If
-        Next col
-    Next row
+
+        Else
+            ' 数値比較対象行
+            If IsNumeric(Evalue) And IsNumeric(Hvalue) Then
+                If Evalue < Hvalue Then
+                    ws.Cells(row, col).Interior.Color = RGB(255, 255, 0) ' 黄色
+                ElseIf Evalue = Hvalue Then
+                    ws.Cells(row, col).Interior.Color = RGB(144, 238, 144) ' 緑
+                Else
+                    ws.Cells(row, col).Interior.ColorIndex = xlNone ' 白
+                End If
+            Else
+                ws.Cells(row, col).Interior.ColorIndex = xlNone ' 白
+            End If
+        End If
+    Next col
 
 End Sub
