@@ -3,24 +3,31 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Dim valE As Double, valH As Double
     Dim i As Long
 
-    ' E列のみ対象
+    ' E列以外の変更は無視
     If Intersect(Target, Me.Range("E2:E1000")) Is Nothing Then Exit Sub
 
-    Application.EnableEvents = False ' ループ防止
+    Application.EnableEvents = False
 
     For Each cell In Intersect(Target, Me.Range("E2:E1000"))
         r = cell.Row
 
-        ' 空欄なら処理しない
-        If Trim(cell.Value) = "" Then GoTo SkipRow
+        ' -----------------------
+        ' 空欄なら塗りをすべて解除
+        ' -----------------------
+        If Trim(cell.Value) = "" Then
+            For i = 4 To 7 ' D～G列
+                Me.Cells(r, i).Interior.ColorIndex = xlNone ' 白色に戻す
+            Next i
+            GoTo SkipRow
+        End If
 
-        valE = Val(cell.Value) ' 数値として解釈
-        valH = Val(Me.Cells(r, "H").Value) ' H列の値も数値として解釈
+        valE = Val(cell.Value)
+        valH = Val(Me.Cells(r, "H").Value)
 
         For i = 4 To 7 ' D〜G列を塗る
             With Me.Cells(r, i).Interior
                 If (r >= 10 And r <= 15) Or (r >= 30 And r <= 46) Or (r >= 55 And r <= 57) Then
-                    ' 感覚判断対象の行
+                    ' 感覚判定対象の行
                     If valE = 0 Then
                         .Color = RGB(255, 255, 0) ' 黄色
                     ElseIf valE = 1 Then
