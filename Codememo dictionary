@@ -12,18 +12,18 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         r = cell.Row
         isSensoryRow = (r >= 10 And r <= 15) Or (r >= 30 And r <= 46) Or (r >= 55 And r <= 57)
 
-        ' 🟦 E列が空欄になったら → E列セルを淡青色に、D〜G列は白に戻す
-        If IsEmpty(cell.Value) Or Len(Trim(cell.Value)) = 0 Then
-            cell.Interior.Color = RGB(221, 235, 247) ' E列 → 淡青
+        ' ✅ 空欄処理：E列セルの表示内容が空なら淡青
+        If Len(Trim(cell.Text)) = 0 Then
+            cell.Interior.Color = RGB(221, 235, 247) ' E列：淡青
             For i = 4 To 7
-                Me.Cells(r, i).Interior.ColorIndex = xlNone ' D～G列 → 無色
+                Me.Cells(r, i).Interior.ColorIndex = xlNone ' D〜G：白に戻す
             Next i
             GoTo SkipRow
         Else
-            cell.Interior.ColorIndex = xlNone ' E列：入力があれば色を戻す
+            cell.Interior.ColorIndex = xlNone ' E列に値があれば色を戻す
         End If
 
-        valE = Val(Trim(cell.Value))
+        valE = Val(cell.Value)
         valH = Val(Me.Cells(r, "H").Value)
 
         For i = 4 To 7
@@ -32,7 +32,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                     If valE = 0 Then
                         .Color = RGB(255, 255, 0) ' 黄色
                     Else
-                        .ColorIndex = xlNone ' 有在庫 → 無色
+                        .ColorIndex = xlNone ' 無色
                     End If
                 Else
                     If valE < valH Then
@@ -40,7 +40,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                     ElseIf valE = valH Then
                         .Color = RGB(144, 238, 144) ' 緑
                     Else
-                        .ColorIndex = xlNone ' 在庫充分 → 無色
+                        .ColorIndex = xlNone ' 無色
                     End If
                 End If
             End With
