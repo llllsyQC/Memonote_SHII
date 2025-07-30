@@ -53,3 +53,64 @@ SkipRow:
 
     Application.EnableEvents = True
 End Sub
+
+
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+    Dim r As Long
+    Dim valE As Double, valH As Double
+    Dim i As Long
+    Dim isSensoryRow As Boolean
+    Dim cell As Range
+
+    If Intersect(Target, Me.Range("E2:E1000")) Is Nothing Then Exit Sub
+
+    Application.EnableEvents = False
+
+    For Each cell In Intersect(Target, Me.Range("E2:E1000"))
+        r = cell.Row
+        ' ✅ 感覚判断対象：通常の行 + 特殊な行
+        isSensoryRow = (r >= 10 And r <= 15) Or _
+                       (r >= 30 And r <= 46) Or _
+                       (r >= 55 And r <= 57) Or _
+                       (r = 47 Or r = 48 Or r = 66 Or r = 67 Or r = 71 Or r = 88)
+
+        ' ✅ 空欄対応：E列→淡青、D・F・G→無色
+        If cell.Formula = "" Then
+            cell.Interior.Color = RGB(221, 235, 247)
+            Me.Cells(r, 4).Interior.ColorIndex = xlNone
+            Me.Cells(r, 6).Interior.ColorIndex = xlNone
+            Me.Cells(r, 7).Interior.ColorIndex = xlNone
+            GoTo SkipRow
+        Else
+            cell.Interior.ColorIndex = xlNone
+        End If
+
+        valE = Val(cell.Value)
+        valH = Val(Me.Cells(r, "H").Value)
+
+        For i = 4 To 7
+            With Me.Cells(r, i).Interior
+                If isSensoryRow Then
+                    If valE = 0 Then
+                        .Color = RGB(255, 255, 0) ' 黄色
+                    Else
+                        .ColorIndex = xlNone     ' 無色
+                    End If
+                Else
+                    If valE < valH Then
+                        .Color = RGB(255, 255, 0) ' 黄色
+                    ElseIf valE = valH Then
+                        .Color = RGB(144, 238, 144) ' 緑
+                    Else
+                        .ColorIndex = xlNone
+                    End If
+                End If
+            End With
+        Next i
+
+SkipRow:
+    Next cell
+
+    Application.EnableEvents = True
+End Sub
