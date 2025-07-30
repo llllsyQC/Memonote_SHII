@@ -1,11 +1,58 @@
-先日、9月のシフトに関して年休取得についてはお任せしますとお伝えしましたが、
-念のため補足させてください。
+Private Sub Worksheet_Change(ByVal Target As Range)
+    Dim checkRow As Long
+    Dim cell As Range
+    Dim col As Long
+    Dim Hvalue As Variant
+    Dim Evalue As Variant
+    Dim specialCols As Variant
 
-もし10月に予定通り年休が2日付与されたとしても、
-現時点での取得状況だと、うちの会社の最低取得基準に届かない見込みです。
+    specialCols = Array(10, 11, 12, 13, 14, 15, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 55, 56, 57)
 
-それに加えて、前に11月のシフトが調整しにくいかもと伺っていたのと、
-12月は年末に向けて休み希望が多くなる可能性もあるかなと思い、
-もし9月で年休が取れそうであれば、ぜひ取得させてもらえたら助かります。
+    If Not Intersect(Target, Range("E4:E100")) Is Nothing Then
+        Application.EnableEvents = False
 
-ご確認よろしくお願いします。
+        For Each cell In Intersect(Target, Range("E4:E100"))
+            checkRow = cell.Row
+            Evalue = Trim(cell.Value)
+            Hvalue = Trim(Cells(checkRow, "H").Value)
+
+            ' 先重置背景色 C～G列
+            Range("C" & checkRow & ":G" & checkRow).Interior.ColorIndex = xlNone
+
+            ' 判定当前列是否为特殊列
+            col = cell.Column
+            If IsInArray(col, specialCols) Then
+                ' 特殊列：0 → 黄色，1 → 白色
+                If Evalue = "0" Then
+                    Range("C" & checkRow & ":G" & checkRow).Interior.Color = RGB(255, 255, 0)
+                ElseIf Evalue = "1" Then
+                    Range("C" & checkRow & ":G" & checkRow).Interior.ColorIndex = xlNone
+                End If
+            Else
+                ' 通常列：做数值比较
+                If IsNumeric(Evalue) And IsNumeric(Hvalue) Then
+                    If Val(Evalue) < Val(Hvalue) Then
+                        Range("C" & checkRow & ":G" & checkRow).Interior.Color = RGB(255, 255, 0) ' 黄色
+                    ElseIf Val(Evalue) = Val(Hvalue) Then
+                        Range("C" & checkRow & ":G" & checkRow).Interior.Color = RGB(144, 238, 144) ' 绿色
+                    Else
+                        Range("C" & checkRow & ":G" & checkRow).Interior.ColorIndex = xlNone ' 白色
+                    End If
+                End If
+            End If
+        Next cell
+
+        Application.EnableEvents = True
+    End If
+End Sub
+
+Private Function IsInArray(val As Long, arr As Variant) As Boolean
+    Dim i As Long
+    For i = LBound(arr) To UBound(arr)
+        If arr(i) = val Then
+            IsInArray = True
+            Exit Function
+        End If
+    Next i
+    IsInArray = False
+End Function
