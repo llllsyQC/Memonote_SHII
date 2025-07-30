@@ -55,7 +55,6 @@ SkipRow:
 End Sub
 
 
-
 Private Sub Worksheet_Change(ByVal Target As Range)
     Dim r As Long
     Dim valE As Double, valH As Double
@@ -69,13 +68,11 @@ Private Sub Worksheet_Change(ByVal Target As Range)
 
     For Each cell In Intersect(Target, Me.Range("E2:E1000"))
         r = cell.Row
-        ' ✅ 感覚判断対象：通常の行 + 特殊な行
         isSensoryRow = (r >= 10 And r <= 15) Or _
                        (r >= 30 And r <= 46) Or _
-                       (r >= 55 And r <= 57) Or _
-                       (r = 47 Or r = 48 Or r = 66 Or r = 67 Or r = 71 Or r = 88)
+                       (r >= 55 And r <= 57)
 
-        ' ✅ 空欄対応：E列→淡青、D・F・G→無色
+        ' ✅ E列为空处理
         If cell.Formula = "" Then
             cell.Interior.Color = RGB(221, 235, 247)
             Me.Cells(r, 4).Interior.ColorIndex = xlNone
@@ -87,21 +84,32 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         End If
 
         valE = Val(cell.Value)
-        valH = Val(Me.Cells(r, "H").Value)
+
+        ' ✅ 特殊行：如果 H列不是纯数字，就从文字中提取数字
+        If Not IsNumeric(Me.Cells(r, "H").Value) Then
+            valH = ExtractFirstNumber(Me.Cells(r, "H").Value)
+        Else
+            valH = Val(Me.Cells(r, "H").Value)
+        End If
+
+        ' ✅ 手动将 47,48,66,67,71,88 判定为比較対象行
+        If r = 47 Or r = 48 Or r = 66 Or r = 67 Or r = 71 Or r = 88 Then
+            isSensoryRow = False ' 見た目は感覚でも中は比較する
+        End If
 
         For i = 4 To 7
             With Me.Cells(r, i).Interior
                 If isSensoryRow Then
                     If valE = 0 Then
-                        .Color = RGB(255, 255, 0) ' 黄色
+                        .Color = RGB(255, 255, 0)
                     Else
-                        .ColorIndex = xlNone     ' 無色
+                        .ColorIndex = xlNone
                     End If
                 Else
                     If valE < valH Then
-                        .Color = RGB(255, 255, 0) ' 黄色
+                        .Color = RGB(255, 255, 0)
                     ElseIf valE = valH Then
-                        .Color = RGB(144, 238, 144) ' 緑
+                        .Color = RGB(144, 238, 144)
                     Else
                         .ColorIndex = xlNone
                     End If
@@ -114,3 +122,17 @@ SkipRow:
 
     Application.EnableEvents = True
 End Sub
+
+' ✅ H列の文章から数値を取り出す
+Function ExtractFirstNumber(ByVal txt As String) As Double
+    Dim regex As Object
+    Set regex = CreateObject("VBScript.RegExp")
+    regex.Pattern = "(\d+)"
+    regex.Global = False
+    regex.IgnoreCase = True
+    If regex.test(txt) Then
+        ExtractFirstNumber = CLng(regex.Execute(txt)(0).Value)
+    Else
+        ExtractFirstNumber = 0
+    End If
+End Function
