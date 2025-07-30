@@ -13,32 +13,35 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         r = cell.Row
         isSensoryRow = (r >= 10 And r <= 15) Or (r >= 30 And r <= 46) Or (r >= 55 And r <= 57)
 
-        ' ✅ E列が空欄になったら → E列セルを淡青にする（D〜Gは保持）
+        ' ✅ E列が空欄になったら → E列を淡青にし、D〜Gも白に戻す
         If cell.Formula = "" Then
             cell.Interior.Color = RGB(221, 235, 247) ' E列 → 淡青
-            GoTo SkipRow ' D～G列はそのまま
+            For i = 4 To 7 ' D～G列を白に戻す
+                Me.Cells(r, i).Interior.ColorIndex = xlNone
+            Next i
+            GoTo SkipRow
         Else
-            cell.Interior.ColorIndex = xlNone ' E列有值 → 清除颜色
+            cell.Interior.ColorIndex = xlNone ' E列に値があれば白に戻す
         End If
 
         valE = Val(cell.Value)
         valH = Val(Me.Cells(r, "H").Value)
 
-        For i = 4 To 7 ' D～G列
+        For i = 4 To 7 ' D～G列の色判定
             With Me.Cells(r, i).Interior
                 If isSensoryRow Then
                     If valE = 0 Then
-                        .Color = RGB(255, 255, 0) ' 黄色
+                        .Color = RGB(255, 255, 0) ' 黄色（補充必要）
                     Else
-                        .ColorIndex = xlNone ' 無色
+                        .ColorIndex = xlNone ' 無色（補充不要）
                     End If
                 Else
                     If valE < valH Then
-                        .Color = RGB(255, 255, 0) ' 黄色
+                        .Color = RGB(255, 255, 0) ' 黄色（不足）
                     ElseIf valE = valH Then
-                        .Color = RGB(144, 238, 144) ' 緑
+                        .Color = RGB(144, 238, 144) ' 緑（ちょうど）
                     Else
-                        .ColorIndex = xlNone ' 無色（白）
+                        .ColorIndex = xlNone ' 無色（在庫充分）
                     End If
                 End If
             End With
