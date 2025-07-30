@@ -1,138 +1,33 @@
-Private Sub Worksheet_Change(ByVal Target As Range)
-    Dim r As Long
-    Dim valE As Double, valH As Double
-    Dim i As Long
-    Dim isSensoryRow As Boolean
-    Dim cell As Range
+消耗品チェックリストのVBA処理を含むフォーマットについて、以下の修正を行いました。
+実運用前にチーム内で確認・試用をお願いします。
 
-    If Intersect(Target, Me.Range("E2:E1000")) Is Nothing Then Exit Sub
+⸻
 
-    Application.EnableEvents = False
+修正内容
+	•	表頭「チェック欄」を「在庫数」に変更
+　→ 今後は数値入力を前提とし、0/1チェック式から在庫記録・比較式に移行
+	•	H列が文章形式（例：「9枚以下（要発注）」）でも、文中の数字を抽出してE列と比較できるようにした
+　→ 対象：47・48・66・67・71・88行など
+	•	感覚判断対象（10～15、30～46、55～57行）については、従来通り「0で黄色、それ以外で無色」
+	•	E列が空欄になった場合の挙動を統一
+　- E列セル：淡青色（RGB 221,235,247）
+　- D・F・G列：無色に戻す
 
-    For Each cell In Intersect(Target, Me.Range("E2:E1000"))
-        r = cell.Row
-        isSensoryRow = (r >= 10 And r <= 15) Or (r >= 30 And r <= 46) Or (r >= 55 And r <= 57)
+⸻
 
-        ' ✅ E列为空 → E设为淡蓝，D・F・G清空颜色
-        If cell.Formula = "" Then
-            cell.Interior.Color = RGB(221, 235, 247) ' E列 → 淡蓝
-            Me.Cells(r, 4).Interior.ColorIndex = xlNone ' D列清空
-            Me.Cells(r, 6).Interior.ColorIndex = xlNone ' F列清空
-            Me.Cells(r, 7).Interior.ColorIndex = xlNone ' G列清空
-            GoTo SkipRow
-        Else
-            cell.Interior.ColorIndex = xlNone ' E列有值 → 清除背景色
-        End If
+使用場面（修正後の想定）
+	•	すべての行に対して「在庫数」を数値で入力する方式に統一
+　→ 入力された値に応じて、D～G列の色が自動判定される（黄色／緑／無色）
+	•	H列が文章でも、文中の数値と比較される
+　→ 「9枚以下」と書かれていても、「8」と入力すれば黄色、「9」で緑、「10」で白に変化
+	•	E列を空欄にすると、青色に戻る
+　→ 入力保留や未記入が視覚的に分かるようにした
 
-        valE = Val(cell.Value)
-        valH = Val(Me.Cells(r, "H").Value)
+⸻
 
-        ' D～G列按逻辑上色
-        For i = 4 To 7
-            With Me.Cells(r, i).Interior
-                If isSensoryRow Then
-                    If valE = 0 Then
-                        .Color = RGB(255, 255, 0) ' 黄色
-                    Else
-                        .ColorIndex = xlNone
-                    End If
-                Else
-                    If valE < valH Then
-                        .Color = RGB(255, 255, 0) ' 黄色
-                    ElseIf valE = valH Then
-                        .Color = RGB(144, 238, 144) ' 绿色
-                    Else
-                        .ColorIndex = xlNone
-                    End If
-                End If
-            End With
-        Next i
+試用確認のお願い
 
-SkipRow:
-    Next cell
-
-    Application.EnableEvents = True
-End Sub
-
-
-Private Sub Worksheet_Change(ByVal Target As Range)
-    Dim r As Long
-    Dim valE As Double, valH As Double
-    Dim i As Long
-    Dim isSensoryRow As Boolean
-    Dim cell As Range
-
-    If Intersect(Target, Me.Range("E2:E1000")) Is Nothing Then Exit Sub
-
-    Application.EnableEvents = False
-
-    For Each cell In Intersect(Target, Me.Range("E2:E1000"))
-        r = cell.Row
-        isSensoryRow = (r >= 10 And r <= 15) Or _
-                       (r >= 30 And r <= 46) Or _
-                       (r >= 55 And r <= 57)
-
-        ' ✅ E列为空处理
-        If cell.Formula = "" Then
-            cell.Interior.Color = RGB(221, 235, 247)
-            Me.Cells(r, 4).Interior.ColorIndex = xlNone
-            Me.Cells(r, 6).Interior.ColorIndex = xlNone
-            Me.Cells(r, 7).Interior.ColorIndex = xlNone
-            GoTo SkipRow
-        Else
-            cell.Interior.ColorIndex = xlNone
-        End If
-
-        valE = Val(cell.Value)
-
-        ' ✅ 特殊行：如果 H列不是纯数字，就从文字中提取数字
-        If Not IsNumeric(Me.Cells(r, "H").Value) Then
-            valH = ExtractFirstNumber(Me.Cells(r, "H").Value)
-        Else
-            valH = Val(Me.Cells(r, "H").Value)
-        End If
-
-        ' ✅ 手动将 47,48,66,67,71,88 判定为比較対象行
-        If r = 47 Or r = 48 Or r = 66 Or r = 67 Or r = 71 Or r = 88 Then
-            isSensoryRow = False ' 見た目は感覚でも中は比較する
-        End If
-
-        For i = 4 To 7
-            With Me.Cells(r, i).Interior
-                If isSensoryRow Then
-                    If valE = 0 Then
-                        .Color = RGB(255, 255, 0)
-                    Else
-                        .ColorIndex = xlNone
-                    End If
-                Else
-                    If valE < valH Then
-                        .Color = RGB(255, 255, 0)
-                    ElseIf valE = valH Then
-                        .Color = RGB(144, 238, 144)
-                    Else
-                        .ColorIndex = xlNone
-                    End If
-                End If
-            End With
-        Next i
-
-SkipRow:
-    Next cell
-
-    Application.EnableEvents = True
-End Sub
-
-' ✅ H列の文章から数値を取り出す
-Function ExtractFirstNumber(ByVal txt As String) As Double
-    Dim regex As Object
-    Set regex = CreateObject("VBScript.RegExp")
-    regex.Pattern = "(\d+)"
-    regex.Global = False
-    regex.IgnoreCase = True
-    If regex.test(txt) Then
-        ExtractFirstNumber = CLng(regex.Execute(txt)(0).Value)
-    Else
-        ExtractFirstNumber = 0
-    End If
-End Function
+修正済みファイルは以下に保存済み：
+X:\大宮データセンター運用フォルダ\97_20250628_消耗品チェックリスト（李）
+	•	実際に入力して、色の変化や処理の挙動に不具合がないか確認してください
+	•	想定外の動作や違和感があれば、李まで直接連絡をお願いします
