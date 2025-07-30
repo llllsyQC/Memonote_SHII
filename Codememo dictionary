@@ -1,21 +1,26 @@
 Private Sub Worksheet_Change(ByVal Target As Range)
     Dim r As Long
-    Dim valE As Variant, valH As Variant
+    Dim valE As Double, valH As Double
     Dim i As Long
 
-    ' E列以外は無視
+    ' E列のみ対象
     If Intersect(Target, Me.Range("E2:E1000")) Is Nothing Then Exit Sub
 
-    Application.EnableEvents = False ' 防止ループ
+    Application.EnableEvents = False ' ループ防止
+
     For Each cell In Intersect(Target, Me.Range("E2:E1000"))
         r = cell.Row
-        valE = Me.Cells(r, "E").Value
-        valH = Me.Cells(r, "H").Value
 
-        For i = 4 To 7 ' D～G列
+        ' 空欄なら処理しない
+        If Trim(cell.Value) = "" Then GoTo SkipRow
+
+        valE = Val(cell.Value) ' 数値として解釈
+        valH = Val(Me.Cells(r, "H").Value) ' H列の値も数値として解釈
+
+        For i = 4 To 7 ' D〜G列を塗る
             With Me.Cells(r, i).Interior
                 If (r >= 10 And r <= 15) Or (r >= 30 And r <= 46) Or (r >= 55 And r <= 57) Then
-                    ' 感覚判断行
+                    ' 感覚判断対象の行
                     If valE = 0 Then
                         .Color = RGB(255, 255, 0) ' 黄色
                     ElseIf valE = 1 Then
@@ -24,21 +29,19 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                         .ColorIndex = xlNone ' 白
                     End If
                 Else
-                    ' 通常判断行
-                    If IsNumeric(valE) And IsNumeric(valH) Then
-                        If valE < valH Then
-                            .Color = RGB(255, 255, 0) ' 黄色
-                        ElseIf valE = valH Then
-                            .Color = RGB(144, 238, 144) ' 緑
-                        Else
-                            .ColorIndex = xlNone ' 白
-                        End If
+                    ' 数値比較ロジック
+                    If valE < valH Then
+                        .Color = RGB(255, 255, 0) ' 黄色
+                    ElseIf valE = valH Then
+                        .Color = RGB(144, 238, 144) ' 緑
                     Else
                         .ColorIndex = xlNone ' 白
                     End If
                 End If
             End With
         Next i
+SkipRow:
     Next cell
+
     Application.EnableEvents = True
 End Sub
