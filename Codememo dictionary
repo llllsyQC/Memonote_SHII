@@ -2,51 +2,53 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Dim r As Long
     Dim valE As Double, valH As Double
     Dim i As Long
+    Dim isSensoryRow As Boolean
 
-    ' E列以外の変更は無視
     If Intersect(Target, Me.Range("E2:E1000")) Is Nothing Then Exit Sub
 
     Application.EnableEvents = False
 
     For Each cell In Intersect(Target, Me.Range("E2:E1000"))
         r = cell.Row
+        isSensoryRow = (r >= 10 And r <= 15) Or (r >= 30 And r <= 46) Or (r >= 55 And r <= 57)
 
-        ' -----------------------
-        ' 空欄なら塗りをすべて解除
-        ' -----------------------
+        ' 空白时：回归淡蓝色
         If Trim(cell.Value) = "" Then
-            For i = 4 To 7 ' D～G列
-                Me.Cells(r, i).Interior.ColorIndex = xlNone ' 白色に戻す
+            For i = 4 To 7
+                Me.Cells(r, i).Interior.Color = RGB(221, 235, 247)
             Next i
             GoTo SkipRow
         End If
 
-        valE = Val(cell.Value)
+        valE = Val(Trim(cell.Value))
         valH = Val(Me.Cells(r, "H").Value)
 
-        For i = 4 To 7 ' D〜G列を塗る
+        For i = 4 To 7
             With Me.Cells(r, i).Interior
-                If (r >= 10 And r <= 15) Or (r >= 30 And r <= 46) Or (r >= 55 And r <= 57) Then
-                    ' 感覚判定対象の行
+                If isSensoryRow Then
+                    ' 感覚判断行逻辑：仅当值为0才上色
                     If valE = 0 Then
-                        .Color = RGB(255, 255, 0) ' 黄色
-                    ElseIf valE = 1 Then
-                        .ColorIndex = xlNone ' 白
+                        .Color = RGB(255, 255, 0) ' 黄色（补充必要）
                     Else
-                        .ColorIndex = xlNone ' 白
+                        .ColorIndex = xlNone ' 无底色（= 有货）
                     End If
                 Else
-                    ' 数値比較ロジック
-                    If valE < valH Then
-                        .Color = RGB(255, 255, 0) ' 黄色
-                    ElseIf valE = valH Then
-                        .Color = RGB(144, 238, 144) ' 緑
+                    ' 通常判断行逻辑
+                    If IsNumeric(valE) And IsNumeric(valH) Then
+                        If valE < valH Then
+                            .Color = RGB(255, 255, 0) ' 黄色
+                        ElseIf valE = valH Then
+                            .Color = RGB(144, 238, 144) ' 绿色
+                        Else
+                            .Color = RGB(221, 235, 247) ' 多余 → 淡蓝
+                        End If
                     Else
-                        .ColorIndex = xlNone ' 白
+                        .Color = RGB(221, 235, 247) ' 非数值 → 淡蓝
                     End If
                 End If
             End With
         Next i
+
 SkipRow:
     Next cell
 
