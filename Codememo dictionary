@@ -4,6 +4,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Dim i As Long
     Dim isSensoryRow As Boolean
 
+    ' E列以外の変更は無視
     If Intersect(Target, Me.Range("E2:E1000")) Is Nothing Then Exit Sub
 
     Application.EnableEvents = False
@@ -12,12 +13,15 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         r = cell.Row
         isSensoryRow = (r >= 10 And r <= 15) Or (r >= 30 And r <= 46) Or (r >= 55 And r <= 57)
 
-        ' 空白时：回归淡蓝色
+        ' 空白時：E列を淡青に、D～Gはそのまま
         If Trim(cell.Value) = "" Then
-            For i = 4 To 7
-                Me.Cells(r, i).Interior.Color = RGB(221, 235, 247)
+            cell.Interior.Color = RGB(221, 235, 247) ' E列だけ淡青
+            For i = 4 To 7 ' D～G列は色を消す
+                Me.Cells(r, i).Interior.ColorIndex = xlNone
             Next i
             GoTo SkipRow
+        Else
+            cell.Interior.ColorIndex = xlNone ' E列が入力されてたら元に戻す
         End If
 
         valE = Val(Trim(cell.Value))
@@ -26,24 +30,24 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         For i = 4 To 7
             With Me.Cells(r, i).Interior
                 If isSensoryRow Then
-                    ' 感覚判断行逻辑：仅当值为0才上色
+                    ' 感覚判断行
                     If valE = 0 Then
-                        .Color = RGB(255, 255, 0) ' 黄色（补充必要）
+                        .Color = RGB(255, 255, 0) ' 黄色
                     Else
-                        .ColorIndex = xlNone ' 无底色（= 有货）
+                        .ColorIndex = xlNone ' 無色
                     End If
                 Else
-                    ' 通常判断行逻辑
+                    ' 通常判断行
                     If IsNumeric(valE) And IsNumeric(valH) Then
                         If valE < valH Then
                             .Color = RGB(255, 255, 0) ' 黄色
                         ElseIf valE = valH Then
-                            .Color = RGB(144, 238, 144) ' 绿色
+                            .Color = RGB(144, 238, 144) ' 緑
                         Else
-                            .Color = RGB(221, 235, 247) ' 多余 → 淡蓝
+                            .ColorIndex = xlNone ' 足りてる → 白
                         End If
                     Else
-                        .Color = RGB(221, 235, 247) ' 非数值 → 淡蓝
+                        .ColorIndex = xlNone ' 比較不能 → 無色
                     End If
                 End If
             End With
