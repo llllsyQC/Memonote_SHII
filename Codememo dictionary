@@ -10,10 +10,12 @@ Private Const CLR_WARN_R As Long = 255, CLR_WARN_G As Long = 255, CLR_WARN_B As 
 Private Const CLR_EQUAL_R As Long = 146, CLR_EQUAL_G As Long = 208, CLR_EQUAL_B As Long = 80 ' 一致：緑（E=H）
 
 ' ===========================================================================================
-' E列の入力に応じて D～G を着色する。
-' ・特殊行（SpecialRows）：E=0→黄色、E=1→無色、その他→無色（エラー表示なし）
-' ・通常行：E<H 黄色、E=H 緑、E>H 無色（Hは結合セル/文字列から数値抽出に対応）
-' ・Eを空欄（削除/クリア）にした場合：E=薄青、D/F/G=無色（直ちに処理終了）
+' 仕様：
+' ・特殊行（固定）：10-15, 31-47, 51, 56-58, 67-68, 72, 89
+'     └ E=0 → D～G を黄色、E=1 → 無色、その他 → 無色（通常比較は行わない）
+' ・通常行：
+'     └ E<H → 黄色、E=H → 緑、E>H → 無色（Hは結合セル/文字列→数値抽出に対応）
+' ・Eを空欄にした場合：E=薄青（221,235,247）、D/F/G=無色
 ' ===========================================================================================
 Private Sub Worksheet_Change(ByVal Target As Range)
     Dim rng As Range, c As Range
@@ -30,7 +32,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     For Each c In rng.Cells
         r = c.Row
         
-        ' === 空白処理：E削除/クリア → E=薄青、D・F・G=無色（Eは触らない） ===
+        ' === 空白：E=薄青、D/F/G=無色（Eは触らない） ===
         If LenB(Trim$(CStr(c.Value))) = 0 Then
             Me.Cells(r, 4).Interior.ColorIndex = xlNone ' D
             Me.Cells(r, 6).Interior.ColorIndex = xlNone ' F
@@ -45,31 +47,31 @@ Private Sub Worksheet_Change(ByVal Target As Range)
             GoTo next_cell
         End If
         
-        ' ここからは E に値が入っている：一旦無色に初期化
+        ' 初期化：E/D～G を一旦無色に
         c.Interior.ColorIndex = xlNone
         For i = 4 To 7
             Me.Cells(r, i).Interior.ColorIndex = xlNone
         Next
         
-        ' === 特殊行（SpecialRows）=== 0/1 のみ扱う。その他は無色のまま。
-        If IsSpecialRow(r) Then
-            ' 表示テキストを正規化して "0"/"1" を厳密判定（Excelの自動変換影響を受けない）
-            s = NormalizeDigits(CStr(c.Text))
+        ' === 特殊行（固定集合） ===
+        If IsSpecialRowFixed(r) Then
+            ' 0/1 の簡易判定：全角→半角・空白除去のみ（エラー表示は行わない）
+            s = Normalize01(CStr(c.Text))
             If s = "0" Then
                 For i = 4 To 7
                     Me.Cells(r, i).Interior.Color = RGB(CLR_WARN_R, CLR_WARN_G, CLR_WARN_B) ' 255,255,0
                 Next
-                GoTo next_cell   ' ★ 後続の通常行ロジックを回避
+                GoTo next_cell     ' 通常行ロジックに進まない
             ElseIf s = "1" Then
-                ' 在庫あり → 無色（初期化済み）
-                GoTo next_cell   ' ★ 後続の通常行ロジックを回避
+                ' 無色のまま
+                GoTo next_cell     ' 通常行ロジックに進まない
             Else
-                ' 0/1 以外は何もしない（無色のまま）※エラー表示不要の要件に合わせる
-                GoTo next_cell   ' ★ 必ずここで終了して通常行ロジックを回避
+                ' 0/1 以外は無色のまま（要件どおりエラー表示なし）
+                GoTo next_cell     ' 通常行ロジックに進まない
             End If
         End If
         
-        ' === 通常行：E と H の比較（Hは結合セル/文字列→数値抽出に対応） ===
+        ' === 通常行：E と H の比較 ===
         If IsNumeric(c.Value) Then valE = CDbl(c.Value) Else valE = 0
         valH = GetHNumericValue(r)
         
@@ -94,60 +96,20 @@ End Sub
 
 ' ====== ユーティリティ ======
 
-' 特殊行判定：
-' ・ブック範囲の名前「SpecialRows」を優先的に解決（シート範囲名との競合回避）
-' ・セルの表示文字列（Text）を正規化して解析（Value が日付/数値化されてもOK）
-' ・記法は 単一/カンマ/区間(10-15) を混在可。全角記号や各種ダッシュも正規化。
-Private Function IsSpecialRow(ByVal r As Long) As Boolean
-    Dim rng As Range, cell As Range
-    Dim raw As String, token As Variant
-    Dim a As Long, b As Long
-    
-    On Error Resume Next
-    If Not ThisWorkbook Is Nothing Then
-        If Not ThisWorkbook.Names("SpecialRows") Is Nothing Then
-            Set rng = ThisWorkbook.Names("SpecialRows").RefersToRange
-        End If
-    End If
-    On Error GoTo 0
-    If rng Is Nothing Then
-        On Error Resume Next
-        Set rng = Range("SpecialRows")
-        On Error GoTo 0
-    End If
-    If rng Is Nothing Then Exit Function
-    
-    For Each cell In rng.Cells
-        raw = NormalizeDelimiters(CStr(cell.Text)) ' Text で取得（表示文字列）
-        If Len(raw) > 0 Then
-            For Each token In Split(raw, ",")
-                token = Trim$(CStr(token))
-                If Len(token) = 0 Then GoTo continue_token
-                If InStr(1, token, "-", vbTextCompare) > 0 Then
-                    If TryParseRange(CStr(token), a, b) Then
-                        If r >= a And r <= b Then IsSpecialRow = True: Exit Function
-                    End If
-                ElseIf IsNumeric(token) Then
-                    If CLng(token) = r Then IsSpecialRow = True: Exit Function
-                End If
-continue_token:
-            Next token
-        End If
-    Next cell
-End Function
-
-' "m-n" 書式を a,b にパース（m>n の場合は入れ替え、m<=n に正規化）
-Private Function TryParseRange(ByVal s As String, ByRef a As Long, ByRef b As Long) As Boolean
-    Dim parts() As String
-    parts = Split(Replace$(s, " ", ""), "-")
-    If UBound(parts) = 1 Then
-        If IsNumeric(parts(0)) And IsNumeric(parts(1)) Then
-            a = CLng(parts(0)): b = CLng(parts(1))
-            If a > b Then
-                Dim t As Long: t = a: a = b: b = t
-            End If
-            TryParseRange = True
-        End If
+' 特殊行（固定定義）：10-15, 31-47, 51, 56-58, 67-68, 72, 89
+Private Function IsSpecialRowFixed(ByVal r As Long) As Boolean
+    If (r >= 10 And r <= 15) Then
+        IsSpecialRowFixed = True: Exit Function
+    ElseIf (r >= 31 And r <= 47) Then
+        IsSpecialRowFixed = True: Exit Function
+    ElseIf r = 51 Then
+        IsSpecialRowFixed = True: Exit Function
+    ElseIf (r >= 56 And r <= 58) Then
+        IsSpecialRowFixed = True: Exit Function
+    ElseIf (r >= 67 And r <= 68) Then
+        IsSpecialRowFixed = True: Exit Function
+    ElseIf r = 72 Or r = 89 Then
+        IsSpecialRowFixed = True: Exit Function
     End If
 End Function
 
@@ -155,7 +117,7 @@ End Function
 Private Function GetHNumericValue(ByVal r As Long) As Double
     Dim hCell As Range, txt As String, m As Object
     Set hCell = Me.Cells(r, COL_H)
-    If hCell.MergeCells Then Set hCell = hCell.MergeArea(1, 1) ' 結合セルの左上セルを参照
+    If hCell.MergeCells Then Set hCell = hCell.MergeArea(1, 1) ' 結合セルの左上セル
     
     If IsNumeric(hCell.Value) And Len(hCell.Value) > 0 Then
         GetHNumericValue = CDbl(hCell.Value)
@@ -175,47 +137,19 @@ Private Function GetHNumericValue(ByVal r As Long) As Double
     End If
 End Function
 
-' ====== 正規化ユーティリティ ======
-
-' 全角数字/記号→半角、カンマ/空白除去、小数点除去（"0"/"1" 判定用に軽量化）
-Private Function NormalizeDigits(ByVal s As String) As String
+' 0/1 判定用の軽量正規化（全角→半角、空白除去）
+Private Function Normalize01(ByVal s As String) As String
     Dim i As Long, ch As String, code As Long, out As String
     s = Trim$(s)
     For i = 1 To Len(s)
         ch = Mid$(s, i, 1)
         code = AscW(ch)
-        Select Case code
-            Case &HFF10 To &HFF19 ' 全角０〜９
-                ch = ChrW(code - &HFEE0)
-            Case &HFF0E, &HFF61 ' 全角/半角ピリオド
-                ch = "."
-            Case &HFF0C ' 全角カンマ
-                ch = ","
-        End Select
+        If code >= &HFF10 And code <= &HFF19 Then ' 全角０〜９
+            ch = ChrW(code - &HFEE0)
+        End If
         out = out & ch
     Next i
-    out = Replace$(out, ",", "")
     out = Replace$(out, " ", "")
     out = Replace$(out, vbTab, "")
-    out = Replace$(out, ".", "")
-    NormalizeDigits = out
-End Function
-
-' 区切り/ダッシュ類を正規化：中文/和文の記号も取り扱い
-Private Function NormalizeDelimiters(ByVal s As String) As String
-    ' カンマ類：，、 → ,
-    s = Replace$(s, "，", ",")
-    s = Replace$(s, "、", ",")
-    ' ダッシュ類：ー － — – − → -
-    s = Replace$(s, "ー", "-")
-    s = Replace$(s, "－", "-")
-    s = Replace$(s, "—", "-")
-    s = Replace$(s, "–", "-")
-    s = Replace$(s, "−", "-")
-    ' 余分な空白除去（全角/半角）
-    s = Trim$(s)
-    s = Replace$(s, vbTab, "")
-    s = Replace$(s, " ", "")
-    s = Replace$(s, ChrW(&H3000), "") ' 全角スペース
-    NormalizeDelimiters = s
+    Normalize01 = out
 End Function
