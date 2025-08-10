@@ -1,18 +1,25 @@
 Option Explicit
 
 ' ====== 設定 ======
-Private Const WATCH_RANGE As String = "E4:E1000"   ' 監視対象範囲
+Private Const WATCH_RANGE As String = "E4:E1000"   ' 監視対象範囲（E列のみ）
 Private Const COL_H As Long = 8                    ' H列
 
 ' 色設定（仕様固定）
-Private Const CLR_INFO_R As Long = 221, CLR_INFO_G As Long = 235, CLR_INFO_B As Long = 247 ' 空白：薄青
-Private Const CLR_WARN_R As Long = 255, CLR_WARN_G As Long = 255, CLR_WARN_B As Long = 0   ' 警告：黄色（不足/無在庫）
+Private Const CLR_INFO_R As Long = 221, CLR_INFO_G As Long = 235, CLR_INFO_B As Long = 247   ' 空白：薄青（入力未完了の注意）
+Private Const CLR_WARN_R As Long = 255, CLR_WARN_G As Long = 255, CLR_WARN_B As Long = 0     ' 警告/不足：黄色（E<H または 特殊行でE=0）
 Private Const CLR_EQUAL_R As Long = 146, CLR_EQUAL_G As Long = 208, CLR_EQUAL_B As Long = 80 ' 一致：緑（E=H）
 
+' ===========================================================================================
+' E列の入力に応じて D～G を着色する。
+' ・特殊行（SpecialRows）：0→黄色、1→無色、その他→Eに「入力エラー」
+' ・通常行：E<H 黄色、E=H 緑、E>H 無色（Hは結合セル/文字列から数値抽出に対応）
+' ・Eを空欄（削除/クリア）にした場合：E=薄青、D/F/G=無色（直ちに処理終了）
+' ===========================================================================================
 Private Sub Worksheet_Change(ByVal Target As Range)
     Dim rng As Range, c As Range
     Dim r As Long, i As Long
     Dim valE As Double, valH As Double
+    Dim s As String
     
     On Error GoTo exit_handler
     Set rng = Intersect(Target, Me.Range(WATCH_RANGE))
@@ -23,45 +30,49 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     For Each c In rng.Cells
         r = c.Row
         
-        ' === 空白処理：E削除/クリア → E薄青、D・F・G無色（Eは触らない） ===
+        ' === 空白処理：E削除/クリア → E=薄青、D・F・G=無色（Eは触らない） ===
         If LenB(Trim$(CStr(c.Value))) = 0 Then
-            ' E：薄青
-            c.Interior.Color = RGB(CLR_INFO_R, CLR_INFO_G, CLR_INFO_B)
-            ' D・F・G：無色（E=5 はスキップ）
             Me.Cells(r, 4).Interior.ColorIndex = xlNone ' D
             Me.Cells(r, 6).Interior.ColorIndex = xlNone ' F
             Me.Cells(r, 7).Interior.ColorIndex = xlNone ' G
+            With c.Interior
+                .Pattern = xlSolid
+                .PatternColorIndex = xlAutomatic
+                .Color = RGB(CLR_INFO_R, CLR_INFO_G, CLR_INFO_B) ' 221,235,247
+                .TintAndShade = 0
+                .PatternTintAndShade = 0
+            End With
             GoTo next_cell
         End If
         
-        ' ここからは E に値が入っている
-        ' E 自体は無色に、D～G も一度クリア
+        ' ここからは E に値が入っている：いったん無色に初期化
         c.Interior.ColorIndex = xlNone
         For i = 4 To 7
             Me.Cells(r, i).Interior.ColorIndex = xlNone
         Next
         
-        ' === 特殊行（0/1 のみ）：0→黄、1→無色、その他→「入力エラー」 ===
+        ' === 特殊行（SpecialRows）判定：0/1 のみ有効 ===
         If IsSpecialRow(r) Then
-            If IsNumeric(c.Value) Then
-                valE = CDbl(c.Value)
-                Select Case valE
-                    Case 0
-                        For i = 4 To 7
-                            Me.Cells(r, i).Interior.Color = RGB(CLR_WARN_R, CLR_WARN_G, CLR_WARN_B)
-                        Next
-                    Case 1
-                        ' 既にクリア済み → 何もしない
-                    Case Else
-                        c.Value = "入力エラー"
-                End Select
+            ' 入力値を正規化（全角→半角、カンマ/空白除去、小数点も除去）して 0/1 を厳密判定
+            s = NormalizeDigits(CStr(c.Value))
+            If s = "0" Then
+                For i = 4 To 7
+                    Me.Cells(r, i).Interior.Color = RGB(CLR_WARN_R, CLR_WARN_G, CLR_WARN_B) ' 255,255,0
+                Next
+            ElseIf s = "1" Then
+                ' 在庫あり → 無色（初期化済み）
             Else
+                ' 0/1以外 → E に「入力エラー」を明示（書式を一時的に文字列へ）
+                Dim prevFmt As String
+                prevFmt = c.NumberFormatLocal
+                c.NumberFormatLocal = "@"
                 c.Value = "入力エラー"
+                c.NumberFormatLocal = prevFmt
             End If
             GoTo next_cell
         End If
         
-        ' === 非特殊行：E と H を比較（E<H 黄、E=H 緑、E>H 無色） ===
+        ' === 通常行：E と H の比較（Hは結合セル/文字列→数値抽出に対応） ===
         If IsNumeric(c.Value) Then valE = CDbl(c.Value) Else valE = 0
         valH = GetHNumericValue(r)
         
@@ -86,7 +97,7 @@ End Sub
 
 ' ====== ユーティリティ ======
 
-' 特殊行判定（名前付き範囲「SpecialRows」に対応：単一・カンマ・区間 10-15）
+' 特殊行判定（名前付き範囲「SpecialRows」に対応：単一/カンマ/区間 10-15）
 Private Function IsSpecialRow(ByVal r As Long) As Boolean
     Dim rng As Range, cell As Range
     Dim raw As String, token As Variant
@@ -121,7 +132,7 @@ no_name:
     IsSpecialRow = False
 End Function
 
-' "m-n" を a,b にパース（m<=n 正規化）
+' "m-n" 書式を a,b にパース（m>n の場合は入れ替え、m<=n に正規化）
 Private Function TryParseRange(ByVal s As String, ByRef a As Long, ByRef b As Long) As Boolean
     Dim parts() As String
     parts = Split(Replace$(s, " ", ""), "-")
@@ -136,11 +147,11 @@ Private Function TryParseRange(ByVal s As String, ByRef a As Long, ByRef b As Lo
     End If
 End Function
 
-' H列の比較用数値（結合セル＆文字列→数値抽出対応）
+' H列の比較用数値を取得（結合セル対応・文字列から最初の数値を抽出）
 Private Function GetHNumericValue(ByVal r As Long) As Double
     Dim hCell As Range, txt As String, m As Object
     Set hCell = Me.Cells(r, COL_H)
-    If hCell.MergeCells Then Set hCell = hCell.MergeArea(1, 1)
+    If hCell.MergeCells Then Set hCell = hCell.MergeArea(1, 1) ' 結合セルの左上セルを参照
     
     If IsNumeric(hCell.Value) And Len(hCell.Value) > 0 Then
         GetHNumericValue = CDbl(hCell.Value)
@@ -158,4 +169,33 @@ Private Function GetHNumericValue(ByVal r As Long) As Double
             End If
         End With
     End If
+End Function
+
+' ====== 入力正規化ユーティリティ ======
+
+' 全角数字/記号を半角へ、カンマと空白を除去し、小数点を除去して「0/1」判定に使う文字列を返す
+Private Function NormalizeDigits(ByVal s As String) As String
+    Dim i As Long, ch As String, code As Long, out As String
+    s = Trim$(s)
+    ' 全角→半角（０〜９、．、，）
+    For i = 1 To Len(s)
+        ch = Mid$(s, i, 1)
+        code = AscW(ch)
+        Select Case code
+            Case &HFF10 To &HFF19 ' 全角数字０〜９
+                ch = ChrW(code - &HFEE0)
+            Case &HFF0E, &HFF61 ' 全角句点/半角片仮名ピリオド
+                ch = "."
+            Case &HFF0C ' 全角カンマ
+                ch = ","
+        End Select
+        out = out & ch
+    Next i
+    ' カンマと空白を削除
+    out = Replace$(out, ",", "")
+    out = Replace$(out, " ", "")
+    out = Replace$(out, vbTab, "")
+    ' 小数点を削除（"0.0" などは "00" になり、結果は "0" 扱いにはならない）
+    out = Replace$(out, ".", "")
+    NormalizeDigits = out
 End Function
