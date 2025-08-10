@@ -6,31 +6,35 @@ Private Const COL_H As Long = 8                    ' H列
 
 ' 色設定（仕様固定）
 Private Const CLR_INFO_R As Long = 221, CLR_INFO_G As Long = 235, CLR_INFO_B As Long = 247   ' 空白：薄青（入力未完了の注意）
-Private Const CLR_WARN_R As Long = 255, CLR_WARN_G As Long = 255, CLR_WARN_B As Long = 0     ' 警告/不足：黄色（E<H または 特殊行でE=0）
+Private Const CLR_WARN_R As Long = 255, CLR_WARN_G As Long = 255, CLR_WARN_B As Long = 0     ' 警告/不足：黄色
 Private Const CLR_EQUAL_R As Long = 146, CLR_EQUAL_G As Long = 208, CLR_EQUAL_B As Long = 80 ' 一致：緑（E=H）
 
 ' ===========================================================================================
-' 仕様：
-' ・特殊行（設定優先→無ければ固定にフォールバック）
-'     └ 特殊行では E=0 → D～G：黄色、E=1 → 無色、その他 → 無色（通常比較は行わない）
-' ・通常行：E<H → 黄色、E=H → 緑、E>H → 無色（Hは結合セル/文字列→数値抽出に対応）
-' ・Eを空欄にした場合：E=薄青（221,235,247）、D/F/G=無色（即時終了）
+' 仕様概要
+' ・特殊行：命名範囲「SpecialRows」（ブック級）を読み込み。未設定/空なら固定集合へフォールバック。
+'    └ E=0 → D～G：黄色、E=1 → 無色、その他 → 無色（通常比較は行わない）
+' ・通常行：E<H → 黄色、E=H → 緑、E>H → 無色
+' ・E 空欄：E=薄青、D/F/G=無色（即時終了）
 ' ===========================================================================================
 Private Sub Worksheet_Change(ByVal Target As Range)
     Dim rng As Range, c As Range
     Dim r As Long, i As Long
     Dim valE As Double, valH As Double
     Dim s As String
-    
+    Dim sp As Object  ' Scripting.Dictionary（特殊行セット）
+
     On Error GoTo exit_handler
     Set rng = Intersect(Target, Me.Range(WATCH_RANGE))
     If rng Is Nothing Then Exit Sub
-    
+
+    ' 特殊行セットをロード（設定優先→固定フォールバック）
+    Set sp = LoadSpecialRowsSet()
+
     Application.EnableEvents = False
-    
+
     For Each c In rng.Cells
         r = c.Row
-        
+
         ' === 空白：E=薄青、D/F/G=無色（Eは触らない） ===
         If LenB(Trim$(CStr(c.Value))) = 0 Then
             Me.Cells(r, 4).Interior.ColorIndex = xlNone ' D
@@ -45,15 +49,15 @@ Private Sub Worksheet_Change(ByVal Target As Range)
             End With
             GoTo next_cell
         End If
-        
+
         ' 初期化：E/D～G を一旦無色に
         c.Interior.ColorIndex = xlNone
         For i = 4 To 7
             Me.Cells(r, i).Interior.ColorIndex = xlNone
         Next
-        
-        ' === 特殊行（設定優先→固定フォールバック） ===
-        If IsSpecialRow(r) Then
+
+        ' === 特殊行 ===
+        If sp.Exists(CStr(r)) Then
             ' 表示テキストを軽く正規化して "0"/"1" を判定（エラー表示は行わない）
             s = Normalize01(CStr(c.Text))
             If s = "0" Then
@@ -62,18 +66,16 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                 Next
                 GoTo next_cell   ' 通常行ロジックを回避
             ElseIf s = "1" Then
-                ' 無色のまま
-                GoTo next_cell   ' 通常行ロジックを回避
+                GoTo next_cell   ' 無色のまま・通常行ロジックを回避
             Else
-                ' 0/1 以外は無色のまま（要件どおり）
-                GoTo next_cell   ' 通常行ロジックを回避
+                GoTo next_cell   ' 無色のまま・通常行ロジックを回避
             End If
         End If
-        
+
         ' === 通常行：E と H の比較 ===
         If IsNumeric(c.Value) Then valE = CDbl(c.Value) Else valE = 0
         valH = GetHNumericValue(r)
-        
+
         For i = 4 To 7
             With Me.Cells(r, i).Interior
                 If valE < valH Then
@@ -85,7 +87,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                 End If
             End With
         Next
-        
+
 next_cell:
     Next c
 
@@ -93,49 +95,64 @@ exit_handler:
     Application.EnableEvents = True
 End Sub
 
-' ====== 特殊行判定（設定優先→固定フォールバック） ======
-Private Function IsSpecialRow(ByVal r As Long) As Boolean
-    Dim hasConfigured As Boolean
-    hasConfigured = IsSpecialRowConfigured(r)
-    
-    If hasConfigured Then
-        IsSpecialRow = True
-    ElseIf SpecialRowsConfiguredExists() Then
-        ' 設定は存在するが r は含まれていない → False
-        IsSpecialRow = False
-    Else
-        ' 設定が無い/参照不可 → 固定定義にフォールバック
-        IsSpecialRow = IsSpecialRowFixed(r)
-    End If
-End Function
-
-' 設定（名前「SpecialRows」）に r が含まれるか
-Private Function IsSpecialRowConfigured(ByVal r As Long) As Boolean
+' ====== 特殊行セットの読込（設定優先→固定フォールバック） ======
+Private Function LoadSpecialRowsSet() As Object
+    Dim dict As Object: Set dict = CreateObject("Scripting.Dictionary")
     Dim rng As Range, cell As Range
     Dim raw As String, token As Variant
-    Dim a As Long, b As Long
-    
+    Dim a As Long, b As Long, i As Long
+    Dim loaded As Boolean
+
+    ' ブック級の名前「SpecialRows」→ シート級 → 取得不可なら Nothing
     Set rng = GetSpecialRowsRange()
-    If rng Is Nothing Then Exit Function
-    
-    For Each cell In rng.Cells
-        raw = NormalizeDelimiters(CStr(cell.Text)) ' Text で取得（表示文字列を解析）
-        If Len(raw) > 0 Then
-            For Each token In Split(raw, ",")
-                token = Trim$(CStr(token))
-                If Len(token) = 0 Then GoTo ContinueToken
-                If InStr(1, token, "-", vbTextCompare) > 0 Then
-                    If TryParseRange(token, a, b) Then
-                        If r >= a And r <= b Then IsSpecialRowConfigured = True: Exit Function
+
+    If Not rng Is Nothing Then
+        For Each cell In rng.Cells
+            raw = NormalizeDelimiters(CStr(cell.Text)) ' Text で取得
+            If Len(raw) > 0 Then
+                For Each token In Split(raw, ",")
+                    token = Trim$(CStr(token))
+                    If Len(token) = 0 Then GoTo continue_token
+                    If InStr(1, token, "-", vbTextCompare) > 0 Then
+                        If TryParseRange(token, a, b) Then
+                            For i = a To b
+                                If Not dict.Exists(CStr(i)) Then dict.Add CStr(i), True
+                            Next
+                            loaded = True
+                        End If
+                    ElseIf IsNumeric(token) Then
+                        If Not dict.Exists(CStr(CLng(token))) Then dict.Add CStr(CLng(token)), True
+                        loaded = True
                     End If
-                ElseIf IsNumeric(token) Then
-                    If CLng(token) = r Then IsSpecialRowConfigured = True: Exit Function
-                End If
-ContinueToken:
-            Next token
-        End If
-    Next cell
+continue_token:
+                Next token
+            End If
+        Next cell
+    End If
+
+    ' 何も読めなかった場合：固定集合にフォールバック
+    If Not loaded Then
+        AddFixedSpecialRows dict
+    End If
+
+    Set LoadSpecialRowsSet = dict
 End Function
+
+' 固定の特殊行を dict に追加：10-15, 31-47, 51, 56-58, 67-68, 72, 89
+Private Sub AddFixedSpecialRows(ByVal dict As Object)
+    Dim i As Long
+    For i = 10 To 15: If Not dict.Exists(CStr(i)) Then dict.Add CStr(i), True
+    Next
+    For i = 31 To 47: If Not dict.Exists(CStr(i)) Then dict.Add CStr(i), True
+    Next
+    If Not dict.Exists("51") Then dict.Add "51", True
+    For i = 56 To 58: If Not dict.Exists(CStr(i)) Then dict.Add CStr(i), True
+    Next
+    For i = 67 To 68: If Not dict.Exists(CStr(i)) Then dict.Add CStr(i), True
+    Next
+    If Not dict.Exists("72") Then dict.Add "72", True
+    If Not dict.Exists("89") Then dict.Add "89", True
+End Sub
 
 ' 名前「SpecialRows」の参照範囲（ブック優先 → シート）。無ければ Nothing
 Private Function GetSpecialRowsRange() As Range
@@ -150,30 +167,6 @@ Private Function GetSpecialRowsRange() As Range
     On Error GoTo 0
 End Function
 
-' 設定の存在有無（範囲が解決できるか）
-Private Function SpecialRowsConfiguredExists() As Boolean
-    Dim rng As Range
-    Set rng = GetSpecialRowsRange()
-    SpecialRowsConfiguredExists = Not (rng Is Nothing)
-End Function
-
-' 固定の特殊行：10-15, 31-47, 51, 56-58, 67-68, 72, 89
-Private Function IsSpecialRowFixed(ByVal r As Long) As Boolean
-    If (r >= 10 And r <= 15) Then
-        IsSpecialRowFixed = True
-    ElseIf (r >= 31 And r <= 47) Then
-        IsSpecialRowFixed = True
-    ElseIf r = 51 Then
-        IsSpecialRowFixed = True
-    ElseIf (r >= 56 And r <= 58) Then
-        IsSpecialRowFixed = True
-    ElseIf (r >= 67 And r <= 68) Then
-        IsSpecialRowFixed = True
-    ElseIf r = 72 Or r = 89 Then
-        IsSpecialRowFixed = True
-    End If
-End Function
-
 ' ====== 補助関数 ======
 
 ' "m-n" を a,b にパース（m>n は入れ替え、m<=n に正規化）
@@ -184,7 +177,9 @@ Private Function TryParseRange(ByVal s As String, ByRef a As Long, ByRef b As Lo
     If UBound(parts) = 1 Then
         If IsNumeric(parts(0)) And IsNumeric(parts(1)) Then
             a = CLng(parts(0)): b = CLng(parts(1))
-            If a > b Then Dim t As Long: t = a: a = b: b = t
+            If a > b Then
+                Dim t As Long: t = a: a = b: b = t
+            End If
             TryParseRange = True
         End If
     End If
@@ -195,7 +190,7 @@ Private Function GetHNumericValue(ByVal r As Long) As Double
     Dim hCell As Range, txt As String, m As Object
     Set hCell = Me.Cells(r, COL_H)
     If hCell.MergeCells Then Set hCell = hCell.MergeArea(1, 1) ' 結合セルの左上セル
-    
+
     If IsNumeric(hCell.Value) And Len(hCell.Value) > 0 Then
         GetHNumericValue = CDbl(hCell.Value)
     Else
@@ -231,7 +226,7 @@ Private Function Normalize01(ByVal s As String) As String
     Normalize01 = out
 End Function
 
-' 区切り/ダッシュ類を正規化：中文/和文の記号も取り扱い（，、→, ／ ー－—–−→-）
+' 区切り/ダッシュ類を正規化（，、→, ／ ー－—–−→- ／ 全角空白除去）
 Private Function NormalizeDelimiters(ByVal s As String) As String
     s = Replace$(s, "，", ",")
     s = Replace$(s, "、", ",")
