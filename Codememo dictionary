@@ -45,7 +45,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
             GoTo next_cell
         End If
         
-        ' ここからは E に値が入っている：いったん無色に初期化
+        ' ここからは E に値が入っている：一旦無色に初期化
         c.Interior.ColorIndex = xlNone
         For i = 4 To 7
             Me.Cells(r, i).Interior.ColorIndex = xlNone
@@ -53,23 +53,25 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         
         ' === 特殊行（SpecialRows）判定：0/1 のみ有効 ===
         If IsSpecialRow(r) Then
-            ' 入力値を正規化（全角→半角、カンマ/空白除去、小数点も除去）して 0/1 を厳密判定
+            ' 入力値を正規化（全角→半角、記号/空白を整理して厳密に 0/1 を判定）
             s = NormalizeDigits(CStr(c.Value))
             If s = "0" Then
                 For i = 4 To 7
                     Me.Cells(r, i).Interior.Color = RGB(CLR_WARN_R, CLR_WARN_G, CLR_WARN_B) ' 255,255,0
                 Next
+                GoTo next_cell
             ElseIf s = "1" Then
-                ' 在庫あり → 無色（初期化済み）
+                ' 無色のまま
+                GoTo next_cell
             Else
-                ' 0/1以外 → E に「入力エラー」を明示（書式を一時的に文字列へ）
+                ' 0/1以外 → E に「入力エラー」
                 Dim prevFmt As String
                 prevFmt = c.NumberFormatLocal
                 c.NumberFormatLocal = "@"
                 c.Value = "入力エラー"
                 c.NumberFormatLocal = prevFmt
+                GoTo next_cell
             End If
-            GoTo next_cell
         End If
         
         ' === 通常行：E と H の比較（Hは結合セル/文字列→数値抽出に対応） ===
@@ -97,24 +99,43 @@ End Sub
 
 ' ====== ユーティリティ ======
 
-' 特殊行判定（名前付き範囲「SpecialRows」に対応：単一/カンマ/区間 10-15）
+' 特殊行判定：
+' ・ブック範囲の名前「SpecialRows」を優先的に解決する（シート範囲名との競合回避）
+' ・記法は 単一/カンマ/区間(10-15) を混在可。全角記号や各種ダッシュも正規化して解釈。
 Private Function IsSpecialRow(ByVal r As Long) As Boolean
     Dim rng As Range, cell As Range
     Dim raw As String, token As Variant
     Dim a As Long, b As Long
     
-    On Error GoTo no_name
-    Set rng = Range("SpecialRows")
+    On Error Resume Next
+    ' まずブックレベルの名前を解決
+    If Not ThisWorkbook Is Nothing Then
+        If ThisWorkbook.Names("SpecialRows") Is Nothing Then
+            ' 何もしない（次でシートレベルを試す）
+        Else
+            Set rng = ThisWorkbook.Names("SpecialRows").RefersToRange
+        End If
+    End If
     On Error GoTo 0
-    If rng Is Nothing Then Exit Function
+    
+    ' ブック名が無い場合は ActiveSheet の範囲名を試す
+    If rng Is Nothing Then
+        On Error Resume Next
+        Set rng = Range("SpecialRows")
+        On Error GoTo 0
+    End If
+    
+    If rng Is Nothing Then
+        IsSpecialRow = False
+        Exit Function
+    End If
     
     For Each cell In rng.Cells
-        raw = Trim$(CStr(cell.Value))
+        raw = NormalizeDelimiters(CStr(cell.Value))
         If Len(raw) > 0 Then
             For Each token In Split(raw, ",")
                 token = Trim$(CStr(token))
                 If Len(token) = 0 Then GoTo continue_token
-                
                 If InStr(1, token, "-", vbTextCompare) > 0 Then
                     If TryParseRange(CStr(token), a, b) Then
                         If r >= a And r <= b Then IsSpecialRow = True: Exit Function
@@ -126,10 +147,6 @@ continue_token:
             Next token
         End If
     Next cell
-    Exit Function
-    
-no_name:
-    IsSpecialRow = False
 End Function
 
 ' "m-n" 書式を a,b にパース（m>n の場合は入れ替え、m<=n に正規化）
@@ -171,31 +188,47 @@ Private Function GetHNumericValue(ByVal r As Long) As Double
     End If
 End Function
 
-' ====== 入力正規化ユーティリティ ======
+' ====== 正規化ユーティリティ ======
 
-' 全角数字/記号を半角へ、カンマと空白を除去し、小数点を除去して「0/1」判定に使う文字列を返す
+' 全角数字/記号→半角、カンマ/空白除去、小数点除去（0/1 判定用）
 Private Function NormalizeDigits(ByVal s As String) As String
     Dim i As Long, ch As String, code As Long, out As String
     s = Trim$(s)
-    ' 全角→半角（０〜９、．、，）
     For i = 1 To Len(s)
         ch = Mid$(s, i, 1)
         code = AscW(ch)
         Select Case code
-            Case &HFF10 To &HFF19 ' 全角数字０〜９
+            Case &HFF10 To &HFF19 ' 全角０〜９
                 ch = ChrW(code - &HFEE0)
-            Case &HFF0E, &HFF61 ' 全角句点/半角片仮名ピリオド
+            Case &HFF0E, &HFF61 ' 全角/半角ピリオド
                 ch = "."
             Case &HFF0C ' 全角カンマ
                 ch = ","
         End Select
         out = out & ch
     Next i
-    ' カンマと空白を削除
     out = Replace$(out, ",", "")
     out = Replace$(out, " ", "")
     out = Replace$(out, vbTab, "")
-    ' 小数点を削除（"0.0" などは "00" になり、結果は "0" 扱いにはならない）
     out = Replace$(out, ".", "")
     NormalizeDigits = out
+End Function
+
+' 区切り/ダッシュ類を正規化：中文/和文の記号も取り扱い
+Private Function NormalizeDelimiters(ByVal s As String) As String
+    ' カンマ類：，、 → ,
+    s = Replace$(s, "，", ",")
+    s = Replace$(s, "、", ",")
+    ' ダッシュ類：ー － — – − → -
+    s = Replace$(s, "ー", "-")
+    s = Replace$(s, "－", "-")
+    s = Replace$(s, "—", "-")
+    s = Replace$(s, "–", "-")
+    s = Replace$(s, "−", "-")
+    ' 余分な空白除去（全角/半角）
+    s = Trim$(s)
+    s = Replace$(s, vbTab, "")
+    s = Replace$(s, " ", "")
+    s = Replace$(s, ChrW(&H3000), "") ' 全角スペース
+    NormalizeDelimiters = s
 End Function
