@@ -11,7 +11,7 @@ Private Const CLR_EQUAL_R As Long = 146, CLR_EQUAL_G As Long = 208, CLR_EQUAL_B 
 
 ' ===========================================================================================
 ' E列の入力に応じて D～G を着色する。
-' ・特殊行（SpecialRows）：  E=0→黄色、E=1→無色、その他→Eに「入力エラー」
+' ・特殊行（SpecialRows）：E=0→黄色、E=1→無色、その他→無色（エラー表示なし）
 ' ・通常行：E<H 黄色、E=H 緑、E>H 無色（Hは結合セル/文字列から数値抽出に対応）
 ' ・Eを空欄（削除/クリア）にした場合：E=薄青、D/F/G=無色（直ちに処理終了）
 ' ===========================================================================================
@@ -51,27 +51,21 @@ Private Sub Worksheet_Change(ByVal Target As Range)
             Me.Cells(r, i).Interior.ColorIndex = xlNone
         Next
         
-        ' === 特殊行（SpecialRows）判定：0/1 のみ有効 ===
+        ' === 特殊行（SpecialRows）=== 0/1 のみ扱う。その他は無色のまま。
         If IsSpecialRow(r) Then
-            ' 値は表示テキストから厳密判定（Excelの自動変換影響を受けない）
+            ' 表示テキストを正規化して "0"/"1" を厳密判定（Excelの自動変換影響を受けない）
             s = NormalizeDigits(CStr(c.Text))
             If s = "0" Then
-                ' 無在庫 → D～G を黄色
                 For i = 4 To 7
                     Me.Cells(r, i).Interior.Color = RGB(CLR_WARN_R, CLR_WARN_G, CLR_WARN_B) ' 255,255,0
                 Next
                 GoTo next_cell   ' ★ 後続の通常行ロジックを回避
             ElseIf s = "1" Then
-                ' 在庫あり → 無色のまま
+                ' 在庫あり → 無色（初期化済み）
                 GoTo next_cell   ' ★ 後続の通常行ロジックを回避
             Else
-                ' 0/1以外 → E に「入力エラー」表記（表示崩れ回避のため一時的に文字列書式）
-                Dim prevFmt As String
-                prevFmt = c.NumberFormatLocal
-                c.NumberFormatLocal = "@"
-                c.Value = "入力エラー"
-                c.NumberFormatLocal = prevFmt
-                GoTo next_cell   ' ★ 後続の通常行ロジックを回避
+                ' 0/1 以外は何もしない（無色のまま）※エラー表示不要の要件に合わせる
+                GoTo next_cell   ' ★ 必ずここで終了して通常行ロジックを回避
             End If
         End If
         
@@ -124,7 +118,7 @@ Private Function IsSpecialRow(ByVal r As Long) As Boolean
     If rng Is Nothing Then Exit Function
     
     For Each cell In rng.Cells
-        raw = NormalizeDelimiters(CStr(cell.Text)) ' ★ Text を使う
+        raw = NormalizeDelimiters(CStr(cell.Text)) ' Text で取得（表示文字列）
         If Len(raw) > 0 Then
             For Each token In Split(raw, ",")
                 token = Trim$(CStr(token))
@@ -183,7 +177,7 @@ End Function
 
 ' ====== 正規化ユーティリティ ======
 
-' 全角数字/記号→半角、カンマ/空白除去、小数点除去（0/1 判定用）
+' 全角数字/記号→半角、カンマ/空白除去、小数点除去（"0"/"1" 判定用に軽量化）
 Private Function NormalizeDigits(ByVal s As String) As String
     Dim i As Long, ch As String, code As Long, out As String
     s = Trim$(s)
