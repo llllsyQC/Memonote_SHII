@@ -23,47 +23,45 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     For Each c In rng.Cells
         r = c.Row
         
-        ' --- 空白処理：削除・クリア時は必ず薄青に戻す ---
+        ' === 空白処理：E削除/クリア → E薄青、D・F・G無色（Eは触らない） ===
         If LenB(Trim$(CStr(c.Value))) = 0 Then
-            ' E列：薄青
+            ' E：薄青
             c.Interior.Color = RGB(CLR_INFO_R, CLR_INFO_G, CLR_INFO_B)
-            ' D～G：無色
-            For i = 4 To 7
-                Me.Cells(r, i).Interior.ColorIndex = xlNone
-            Next
-            GoTo next_cell   ' ★ 空白はここで終了（後続ロジックを回避）
+            ' D・F・G：無色（E=5 はスキップ）
+            Me.Cells(r, 4).Interior.ColorIndex = xlNone ' D
+            Me.Cells(r, 6).Interior.ColorIndex = xlNone ' F
+            Me.Cells(r, 7).Interior.ColorIndex = xlNone ' G
+            GoTo next_cell
         End If
         
-        ' Eに値がある場合、まずEの色をクリア
+        ' ここからは E に値が入っている
+        ' E 自体は無色に、D～G も一度クリア
         c.Interior.ColorIndex = xlNone
-        ' D～G初期化
         For i = 4 To 7
             Me.Cells(r, i).Interior.ColorIndex = xlNone
         Next
         
-        ' --- 特殊行（0/1のみ） ---
+        ' === 特殊行（0/1 のみ）：0→黄、1→無色、その他→「入力エラー」 ===
         If IsSpecialRow(r) Then
             If IsNumeric(c.Value) Then
                 valE = CDbl(c.Value)
                 Select Case valE
                     Case 0
-                        ' 無在庫 → 黄色
                         For i = 4 To 7
                             Me.Cells(r, i).Interior.Color = RGB(CLR_WARN_R, CLR_WARN_G, CLR_WARN_B)
                         Next
                     Case 1
-                        ' 有在庫 → 無色（既にクリア）
+                        ' 既にクリア済み → 何もしない
                     Case Else
-                        ' 不正入力 → エラー表示
                         c.Value = "入力エラー"
                 End Select
             Else
                 c.Value = "入力エラー"
             End If
-            GoTo next_cell   ' ★ 特殊行はここで終了（後続ロジックを回避）
+            GoTo next_cell
         End If
         
-        ' --- 通常行（E と H の比較） ---
+        ' === 非特殊行：E と H を比較（E<H 黄、E=H 緑、E>H 無色） ===
         If IsNumeric(c.Value) Then valE = CDbl(c.Value) Else valE = 0
         valH = GetHNumericValue(r)
         
@@ -88,7 +86,7 @@ End Sub
 
 ' ====== ユーティリティ ======
 
-' 特殊行判定（名前付き範囲「SpecialRows」）
+' 特殊行判定（名前付き範囲「SpecialRows」に対応：単一・カンマ・区間 10-15）
 Private Function IsSpecialRow(ByVal r As Long) As Boolean
     Dim rng As Range, cell As Range
     Dim raw As String, token As Variant
@@ -123,7 +121,7 @@ no_name:
     IsSpecialRow = False
 End Function
 
-' "m-n" 形式を a,b に変換
+' "m-n" を a,b にパース（m<=n 正規化）
 Private Function TryParseRange(ByVal s As String, ByRef a As Long, ByRef b As Long) As Boolean
     Dim parts() As String
     parts = Split(Replace$(s, " ", ""), "-")
@@ -138,7 +136,7 @@ Private Function TryParseRange(ByVal s As String, ByRef a As Long, ByRef b As Lo
     End If
 End Function
 
-' H列の比較用数値を取得
+' H列の比較用数値（結合セル＆文字列→数値抽出対応）
 Private Function GetHNumericValue(ByVal r As Long) As Double
     Dim hCell As Range, txt As String, m As Object
     Set hCell = Me.Cells(r, COL_H)
