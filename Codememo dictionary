@@ -31,37 +31,39 @@ Private Sub Worksheet_Change(ByVal Target As Range)
             For i = 4 To 7
                 Me.Cells(r, i).Interior.ColorIndex = xlNone
             Next
-            GoTo next_cell
+            GoTo next_cell   ' ★ 空白はここで終了（後続ロジックを回避）
         End If
         
-        ' Eに値が入っている場合、Eは無色にしてから判定開始
+        ' Eに値がある場合、まずEの色をクリア
         c.Interior.ColorIndex = xlNone
         ' D～G初期化
         For i = 4 To 7
             Me.Cells(r, i).Interior.ColorIndex = xlNone
         Next
         
-        ' --- 特殊行（0/1 のみ有効） ---
+        ' --- 特殊行（0/1のみ） ---
         If IsSpecialRow(r) Then
             If IsNumeric(c.Value) Then
                 valE = CDbl(c.Value)
                 Select Case valE
                     Case 0
+                        ' 無在庫 → 黄色
                         For i = 4 To 7
-                            Me.Cells(r, i).Interior.Color = RGB(CLR_WARN_R, CLR_WARN_G, CLR_WARN_B) ' 黄色
+                            Me.Cells(r, i).Interior.Color = RGB(CLR_WARN_R, CLR_WARN_G, CLR_WARN_B)
                         Next
                     Case 1
-                        ' 無色（既にクリア済み）
+                        ' 有在庫 → 無色（既にクリア）
                     Case Else
+                        ' 不正入力 → エラー表示
                         c.Value = "入力エラー"
                 End Select
             Else
                 c.Value = "入力エラー"
             End If
-            GoTo next_cell
+            GoTo next_cell   ' ★ 特殊行はここで終了（後続ロジックを回避）
         End If
         
-        ' --- 通常行：E と H の比較 ---
+        ' --- 通常行（E と H の比較） ---
         If IsNumeric(c.Value) Then valE = CDbl(c.Value) Else valE = 0
         valH = GetHNumericValue(r)
         
@@ -86,13 +88,7 @@ End Sub
 
 ' ====== ユーティリティ ======
 
-' 特殊行判定：
-' ・名前付き範囲「SpecialRows」から取得
-' ・セル内の記述は以下に対応
-'   例） 10-15    （連番区間）
-'        31,33,35 （カンマ区切り）
-'        51       （単一の行番号）
-'   ※ 上記を混在させてもOK（例： "10-15,31-47"）
+' 特殊行判定（名前付き範囲「SpecialRows」）
 Private Function IsSpecialRow(ByVal r As Long) As Boolean
     Dim rng As Range, cell As Range
     Dim raw As String, token As Variant
@@ -106,13 +102,11 @@ Private Function IsSpecialRow(ByVal r As Long) As Boolean
     For Each cell In rng.Cells
         raw = Trim$(CStr(cell.Value))
         If Len(raw) > 0 Then
-            ' カンマで分割し、各トークンを判定
             For Each token In Split(raw, ",")
                 token = Trim$(CStr(token))
                 If Len(token) = 0 Then GoTo continue_token
                 
                 If InStr(1, token, "-", vbTextCompare) > 0 Then
-                    ' 区間（例：10-15）
                     If TryParseRange(CStr(token), a, b) Then
                         If r >= a And r <= b Then IsSpecialRow = True: Exit Function
                     End If
@@ -129,7 +123,7 @@ no_name:
     IsSpecialRow = False
 End Function
 
-' "m-n" 形式を a,b にパース（m<=n に正規化）
+' "m-n" 形式を a,b に変換
 Private Function TryParseRange(ByVal s As String, ByRef a As Long, ByRef b As Long) As Boolean
     Dim parts() As String
     parts = Split(Replace$(s, " ", ""), "-")
@@ -144,11 +138,11 @@ Private Function TryParseRange(ByVal s As String, ByRef a As Long, ByRef b As Lo
     End If
 End Function
 
-' H列の比較用数値を取得（結合セル対応・文字列から最初の数値を抽出）
+' H列の比較用数値を取得
 Private Function GetHNumericValue(ByVal r As Long) As Double
     Dim hCell As Range, txt As String, m As Object
     Set hCell = Me.Cells(r, COL_H)
-    If hCell.MergeCells Then Set hCell = hCell.MergeArea(1, 1) ' 結合セルの左上セル
+    If hCell.MergeCells Then Set hCell = hCell.MergeArea(1, 1)
     
     If IsNumeric(hCell.Value) And Len(hCell.Value) > 0 Then
         GetHNumericValue = CDbl(hCell.Value)
