@@ -243,26 +243,37 @@ End Function
 
 
 Private Function PromptYearMonth(ByRef tgtDate As Date, ByRef yyyymm As String) As Boolean
-    Dim defDate As Date, s As String
-    defDate = DateSerial(Year(Date), Month(Date), 1) - 1  ' 前月1日
+    Dim defDate As Date
+    Dim s As String
+    Dim msg As String
+    Dim ttl As String
     
-    s = InputBox( _
-        "処理する年月（yyyymm）を入力してください。" & vbCrLf & _
-        "未入力の場合は前月を使用します。", _
-        "対象年月の入力", _
-        Format(defDate, "yyyymm") _
-    )
-    
+    defDate = DateSerial(Year(Date), Month(Date), 1) - 1  ' 上月月初-1天=上月
+
+    ' 先把提示和标题拼好（不用 _ 换行，避免语法问题）
+    msg = "処理する年月(yyyymm)を入力してください。" & vbCrLf & _
+          "未入力の場合は前月を使用します。"
+    ttl = "対象年月の入力"
+
+    s = InputBox(msg, ttl, Format(defDate, "yyyymm"))
     If s = "" Then s = Format(defDate, "yyyymm")
-    s = Trim(s)
-    
+
+    s = Trim$(s)
     If Not IsValidYYYYMM(s) Then
-        MsgBox "入力形式が不正です。（例：202507）", vbExclamation
+        MsgBox "入力形式が不正です。(例: 202507)", vbExclamation
         PromptYearMonth = False
         Exit Function
     End If
-    
+
     yyyymm = s
-    tgtDate = DateSerial(CInt(Left(s, 4)), CInt(Right(s, 2)), 1)
+    tgtDate = DateSerial(CInt(Left$(s, 4)), CInt(Right$(s, 2)), 1)
     PromptYearMonth = True
+End Function
+Private Function IsValidYYYYMM(ByVal s As String) As Boolean
+    Dim y As Integer, m As Integer
+    If Len(s) <> 6 Then Exit Function
+    If Not IsNumeric(s) Then Exit Function
+    y = CInt(Left$(s, 4))
+    m = CInt(Right$(s, 2))
+    IsValidYYYYMM = (y >= 2000 And y <= 2100 And m >= 1 And m <= 12)
 End Function
