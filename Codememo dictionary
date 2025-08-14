@@ -240,3 +240,29 @@ Private Function Tag(ByVal fullpath As String, ByVal label As String) As String
         Tag = "✘ " & label & " : 見つかりません"
     End If
 End Function
+
+
+Private Function PromptYearMonth(ByRef tgtDate As Date, ByRef yyyymm As String) As Boolean
+    Dim defDate As Date, s As String
+    defDate = DateSerial(Year(Date), Month(Date), 1) - 1  ' 前月1日
+    
+    s = InputBox( _
+        "処理する年月（yyyymm）を入力してください。" & vbCrLf & _
+        "未入力の場合は前月を使用します。", _
+        "対象年月の入力", _
+        Format(defDate, "yyyymm") _
+    )
+    
+    If s = "" Then s = Format(defDate, "yyyymm")
+    s = Trim(s)
+    
+    If Not IsValidYYYYMM(s) Then
+        MsgBox "入力形式が不正です。（例：202507）", vbExclamation
+        PromptYearMonth = False
+        Exit Function
+    End If
+    
+    yyyymm = s
+    tgtDate = DateSerial(CInt(Left(s, 4)), CInt(Right(s, 2)), 1)
+    PromptYearMonth = True
+End Function
