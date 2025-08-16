@@ -1,174 +1,28 @@
-Option Explicit
+了解しました。いただいた8月15日の内容をもとに、口頭報告用に整理しました。案件ごとに要点を押さえ、時系列の流れがわかるようにしています。
 
-'=============================
-' 設定（必要に応じて直してOK）
-'=============================
-Private Const BASE_DIR As String = _
-  "\\bbwcfs.local\share25\DATA8\SharePrj\大宮センター運用構築プロジェクト\14. レポート\BMS・PUEレポート"
+⸻
 
-Private Const YEAR_DIR_FMT As String = "yyyy年"
-Private Const MONTH_DIR_SUFFIX As String = "月分"
-Private Const SUB_DIR As String = "BMS・PUE_Monthly_Report"
+顧客対応
 
-'=============================
-' ユーザー入力
-'=============================
-Public Sub 月次取り込み_実行()
-    Dim yyyymm As String
-    yyyymm = GetYyyymmFromUser()
-    If Len(yyyymm) = 0 Then Exit Sub
+まずサーバNo.33のアラーム無視依頼対応です。
+本日も6回の発報があり、いずれも30秒台で復旧しているため静観対応としました。発報は10:18、11:54、12:46、16:32、22:58、そして翌0:59です。次勤務帯へ引き継いでいます。
 
-    If MsgBox("下記の月を処理します。よろしいですか？" & vbCrLf & _
-              "  " & Left$(yyyymm, 4) & "年" & Mid$(yyyymm, 5, 2) & "月", _
-              vbQuestion + vbYesNo, "確認") <> vbYes Then Exit Sub
+次に入館申請対応です。
+10:46、IBM Dela Fuente様より8/22の搬入を伴う入館申請メールを受信しました。搬入口の利用について普備室木下氏に確認し、利用可能との回答を得ています。その後、来訪者受付システムに登録を完了し、受領・登録完了メールをDela Fuente様へ送信済みです。
 
-    Import_BMS_and_PUE_ByYyyymm yyyymm
-    Extract_Results
+続いて顧客エリア入室プロセス変更についてです。
+14:07にIDCF笹木氏からMCDR坂上氏へのメールがあり、IBM様より「緊急時以外はカードを使わず、IBM担当者が同行・案内する方式への変更」が提案されているとのことです。大宮DCについても言及がありましたが、当方への正式な情報共有はなく、現時点では大筋で対応可能と考えています。これをIDCF元木氏・茂木氏へメールで共有したところ、茂木氏は認識なしとのことで、週明けにSBへ確認する方向となりました。最終的に「週明け確認で問題ない」と回答し、茂木氏からも了解の返信を受けています。次勤務帯への引継ぎ案件です。
 
-    MsgBox "完了しました。", vbInformation
-End Sub
+⸻
 
-Private Function GetYyyymmFromUser() As String
-    Dim s As String
-    Do
-        s = Application.InputBox("処理対象の年月を6桁で入力してください（例: 202507）", "年月入力", Type:=2)
-        If s = "False" Then s = "" ' キャンセル
-        If s = "" Then Exit Do
+障害対応
 
-        If IsValidYyyymm(s) Then Exit Do
-        MsgBox "入力形式が正しくありません。YYYYMM（例：202507）で入力してください。", vbExclamation
-    Loop
-    GetYyyymmFromUser = s
-End Function
+男子トイレ詰まり対応がありました。
+9:13、SmartBXアベ様より「男子トイレ中央の個室で詰まり」との申し出があり、SBエンジニアリングへ対応を依頼しました。和久津様・久世様が現地対応し、9:36には作業終了しています。
 
-Private Function IsValidYyyymm(ByVal s As String) As Boolean
-    If Len(s) <> 6 Then Exit Function
-    If Not IsNumeric(s) Then Exit Function
-    Dim y As Integer, m As Integer
-    y = CInt(Left$(s, 4))
-    m = CInt(Right$(s, 2))
-    IsValidYyyymm = (y >= 2000 And y <= 2100 And m >= 1 And m <= 12)
-End Function
+⸻
 
-'=============================
-' パス生成＋ファイル検索（あいまい対応）
-'=============================
-Private Function BuildMonthFolder(ByVal yyyymm As String) As String
-    BuildMonthFolder = BASE_DIR & "\" & _
-                       Format$(DateSerial(CInt(Left$(yyyymm, 4)), 1, 1), YEAR_DIR_FMT) & "\" & _
-                       yyyymm & MONTH_DIR_SUFFIX & "\" & SUB_DIR
-End Function
+KIX業務
 
-Private Function FindFile(ByVal folderPath As String, ByVal key As String, ByVal yyyymm As String) As String
-    Dim fso As Object
-    Dim fName As String
-    Set fso = CreateObject("Scripting.FileSystemObject")
-
-    If Not fso.FolderExists(folderPath) Then
-        Err.Raise vbObjectError + 2001, , "フォルダが見つかりません: " & folderPath
-    End If
-
-    fName = Dir(folderPath & "\*" & key & "*" & yyyymm & "*.xlsx")
-    If fName <> "" Then
-        FindFile = folderPath & "\" & fName
-    Else
-        Err.Raise vbObjectError + 2002, , key & " (" & yyyymm & ") のファイルが見つかりません: " & folderPath
-    End If
-End Function
-
-Private Function OpenByFullPath(ByVal fullPath As String) As Workbook
-    Set OpenByFullPath = Workbooks.Open(fullPath, ReadOnly:=True)
-End Function
-
-'=============================
-' 値貼り付け（Select不要）
-'=============================
-Private Sub CopyValues(ByVal srcSht As Worksheet, ByVal srcAddress As String, _
-                       ByVal dstSht As Worksheet, ByVal dstTopLeft As String)
-    Dim v
-    v = srcSht.Range(srcAddress).Value
-    dstSht.Range(dstTopLeft).Resize(UBound(v, 1), UBound(v, 2)).Value = v
-End Sub
-
-'=============================
-' メイン処理
-'=============================
-Private Sub Import_BMS_and_PUE_ByYyyymm(ByVal yyyymm As String)
-    Dim monthDir As String
-    monthDir = BuildMonthFolder(yyyymm)
-
-    Dim f6A As String, f7A As String, f7B As String, fPUE As String
-    f6A = FindFile(monthDir, "6A", yyyymm)
-    f7A = FindFile(monthDir, "7A", yyyymm)
-    f7B = FindFile(monthDir, "7B", yyyymm)
-    fPUE = FindFile(monthDir, "PUE_TOK04", yyyymm)
-
-    Dim wb6A As Workbook, wb7A As Workbook, wb7B As Workbook, wbPUE As Workbook
-    Set wb6A = OpenByFullPath(f6A)
-    Set wb7A = OpenByFullPath(f7A)
-    Set wb7B = OpenByFullPath(f7B)
-    Set wbPUE = OpenByFullPath(fPUE)
-
-    Dim cur As Workbook: Set cur = ThisWorkbook
-    Dim src As Worksheet, dst As Worksheet
-
-    '--- 7A：PDU/PDP → 7A貼付け A4
-    Set src = wb7A.Worksheets("4. PDU and PDP Equipment")
-    Set dst = cur.Worksheets("7A貼付け")
-    CopyValues src, "A1:O47", dst, "A4"
-
-    '--- 7A：空調 → 7A温湿度 A1   ← 修正：原来误贴到 6A貼付け
-    Set src = wb7A.Worksheets("5. Air Conditioning Equipment")
-    Set dst = cur.Worksheets("7A温湿度")
-    CopyValues src, "A1:O47", dst, "A1"
-
-    '--- 7B：PDU/PDP → 7B貼付け A4
-    Set src = wb7B.Worksheets("4. PDU and PDP Equipment")
-    Set dst = cur.Worksheets("7B貼付け")
-    CopyValues src, "A1:O47", dst, "A4"
-
-    '--- 7B：空調 → 7B温湿度 A1
-    Set src = wb7B.Worksheets("5. Air Conditioning Equipment")
-    Set dst = cur.Worksheets("7B温湿度")
-    CopyValues src, "A1:O47", dst, "A1"
-
-    '--- 6A：PDU/PDP → 6A貼付け A4
-    Set src = wb6A.Worksheets("4. PDU and PDP Equipment")
-    Set dst = cur.Worksheets("6A貼付け")
-    CopyValues src, "A1:O47", dst, "A4"
-
-    '--- 6A：空調 → 6A温湿度 A1
-    Set src = wb6A.Worksheets("5. Air Conditioning Equipment")
-    Set dst = cur.Worksheets("6A温湿度")
-    CopyValues src, "A1:O47", dst, "A1"
-
-    '--- PUE：C7:E7 → SUMMARY&3 H12
-    Set src = wbPUE.Worksheets(1) ' 必要ならシート名を修正
-    Set dst = cur.Worksheets("SUMMARY&3")
-    CopyValues src, "C7:E7", dst, "H12"
-
-    ' クローズ
-    wb6A.Close SaveChanges:=False
-    wb7A.Close SaveChanges:=False
-    wb7B.Close SaveChanges:=False
-    wbPUE.Close SaveChanges:=False
-End Sub
-
-'=============================
-' 該当月用結果：按你指定的两步回贴逻辑
-'=============================
-Private Sub Extract_Results()
-    Dim wb As Workbook: Set wb = ThisWorkbook
-
-    ' 7A：E3:O28 → 7A値!D3； 結果抽出7A!G4:G29 → 7A値!O3
-    CopyValues wb.Worksheets("7A値"), "E3:O28", wb.Worksheets("7A値"), "D3"
-    CopyValues wb.Worksheets("結果抽出7A"), "G4:G29", wb.Worksheets("7A値"), "O3"
-
-    ' 7B：E3:O28 → 7B値!D3； 結果抽出7B!G4:G29 → 7B値!O3
-    CopyValues wb.Worksheets("7B値"), "E3:O28", wb.Worksheets("7B値"), "D3"
-    CopyValues wb.Worksheets("結果抽出7B"), "G4:G29", wb.Worksheets("7B値"), "O3"
-
-    ' 6A：E3:O28 → 6A値!D3； 結果抽出6A!G4:G29 → 6A値!O3
-    CopyValues wb.Worksheets("6A値"), "E3:O28", wb.Worksheets("6A値"), "D3"
-    CopyValues wb.Worksheets("結果抽出6A"), "G4:G29", wb.Worksheets("6A値"), "O3"
-End Sub
+KIX11でも同じく顧客エリア入室プロセス変更について動きがありました。
+14:07にIDCF笹木氏よりMCDR坂上氏へ「IBM様から緊急時以外はカードを使用せずIBM同行方式への変更が提案されている」とのメールがありました。IBM様への回答は8/18中の予定です。
