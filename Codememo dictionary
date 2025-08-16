@@ -1,279 +1,162 @@
 Option Explicit
 
-'==================================================
-' 固定ルート（スクショの強調パス）
-' 必要に応じて変更してください。
-'==================================================
-Private Const BASE_ROOT As String = "\\bbwcfs.local\share25\DATA8\SharePrj\大宮センター_運用構築プロジェクト\14. レポート\BMS・PUEレポート"
+'=============================
+' 設定（必要に応じて直してOK）
+'=============================
+Private Const BASE_DIR As String = _
+  "\\bbwcfs.local\share25\DATA8\SharePrj\大宮センター運用構築プロジェクト\14. レポート\BMS・PUEレポート"
 
-' 元ブックのシート名
-Private Const SRC_SHEET_EQUIP As String = "4. PDU and PDP Equipment"
-Private Const SRC_SHEET_AIR   As String = "5. Air Conditioning Equipment"
+Private Const YEAR_DIR_FMT As String = "yyyy年"
+Private Const MONTH_DIR_SUFFIX As String = "月分"
+Private Const SUB_DIR As String = "BMS・PUE_Monthly_Report"
 
-'======================== 入口 ========================
-Public Sub RunMonthlyImport()
-    Dim ym As String, tgtDate As Date
-    Dim ok As VbMsgBoxResult
-    Dim startFolder As String
-    Dim fp6A As String, fp7A As String, fp7B As String, fpPUE As String
-    
-    ' 1) 年月入力 & 確認
-    If Not PromptYearMonth(tgtDate, ym) Then Exit Sub
-    ok = MsgBox("処理対象年月: " & ym & vbCrLf & "よろしいですか？", vbOKCancel + vbQuestion, "対象年月の確認")
-    If ok <> vbOK Then Exit Sub
-    
-    ' 2) ルールに基づき開始フォルダを特定（見つからなければ選択させる）
-    startFolder = ResolveStartFolder(tgtDate)
-    If Len(startFolder) = 0 Then
-        startFolder = PickAFolder("開始フォルダを選択してください:", BASE_ROOT)
-        If Len(startFolder) = 0 Then
-            MsgBox "処理を中止しました。", vbExclamation
-            Exit Sub
-        End If
-    End If
-    
-    ' 3) 4ファイルを再帰検索
-    fp6A = FindFileRecursive(startFolder, "BMS_Monthly_Report(6A)_" & ym & ".xlsx")
-    fp7A = FindFileRecursive(startFolder, "BMS_Monthly_Report(7A)_" & ym & ".xlsx")
-    fp7B = FindFileRecursive(startFolder, "BMS_Monthly_Report(7B)_" & ym & ".xlsx")
-    fpPUE = FindFileRecursive(startFolder, "PUE_TOK04_" & ym & ".xlsx")
-    
-    ' 検出結果の確認
-    Dim report As String
-    report = "検索開始: " & startFolder & vbCrLf & String(40, "-") & vbCrLf & _
-             Tag(fp6A, "6A") & vbCrLf & Tag(fp7A, "7A") & vbCrLf & _
-             Tag(fp7B, "7B") & vbCrLf & Tag(fpPUE, "PUE_TOK04")
-    ok = MsgBox(report & vbCrLf & vbCrLf & "取り込みを実行しますか？", vbYesNo + vbQuestion, "月次ファイル検出結果（" & ym & "）")
-    If ok <> vbYes Then Exit Sub
-    
-    ' 4) 取り込み実行
-    Application.ScreenUpdating = False
-    Application.EnableEvents = False
-    On Error GoTo CLEAN_FAIL
-    
-    Import_BMS_Blocks_ByPath ym, fp7A, fp7B, fp6A
-    Import_PUE_TOK04_ByPath fpPUE
-    Extract_Monthly_Results
-    
-    MsgBox "月次取り込みが完了しました。", vbInformation
-    
-CLEAN_OK:
-    Application.CutCopyMode = False
-    Application.EnableEvents = True
-    Application.ScreenUpdating = True
-    Exit Sub
-CLEAN_FAIL:
-    MsgBox "処理に失敗しました: " & Err.Number & " - " & Err.Description, vbExclamation
-    Resume CLEAN_OK
+'=============================
+' ユーザー入力
+'=============================
+Public Sub 月次取り込み_実行()
+    Dim yyyymm As String
+    yyyymm = GetYyyymmFromUser()
+    If Len(yyyymm) = 0 Then Exit Sub
+
+    If MsgBox("下記の月を処理します。よろしいですか？" & vbCrLf & _
+              "  " & Left$(yyyymm, 4) & "年" & Mid$(yyyymm, 5, 2) & "月", _
+              vbQuestion + vbYesNo, "確認") <> vbYes Then Exit Sub
+
+    Import_BMS_and_PUE_ByYyyymm yyyymm
+    Extract_Results
+
+    MsgBox "完了しました。", vbInformation
 End Sub
 
-'================= フロー：BMS（値貼り付け） =================
-Private Sub Import_BMS_Blocks_ByPath(ByVal ym As String, _
-                                     ByVal path7A As String, _
-                                     ByVal path7B As String, _
-                                     ByVal path6A As String)
-    Dim wb7A As Workbook, wb7B As Workbook, wb6A As Workbook
-    
-    If Len(path7A) = 0 Or Len(path7B) = 0 Or Len(path6A) = 0 Then _
-        Err.Raise vbObjectError + 800, , "必要ファイルが見つかりません。"
-    
-    Set wb7A = Workbooks.Open(path7A, ReadOnly:=True)
-    Set wb7B = Workbooks.Open(path7B, ReadOnly:=True)
-    Set wb6A = Workbooks.Open(path6A, ReadOnly:=True)
-    
-    ' デバイス表（A1:O47 → A4）
-    CopyBlock wb7A, SRC_SHEET_EQUIP, "A1:O47", ThisWorkbook, "7A貼り付け", "A4", True
-    CopyBlock wb7B, SRC_SHEET_EQUIP, "A1:O47", ThisWorkbook, "7B貼り付け", "A4", True
-    CopyBlock wb6A, SRC_SHEET_EQUIP, "A1:O47", ThisWorkbook, "6A貼り付け", "A4", True
-    
-    ' 温湿度（列幅が違うため範囲別）
-    CopyBlock wb7A, SRC_SHEET_AIR, "A1:O47", ThisWorkbook, "7A温湿度", "A1", True
-    CopyBlock wb7B, SRC_SHEET_AIR, "A1:G47", ThisWorkbook, "7B温湿度", "A1", True
-    CopyBlock wb6A, SRC_SHEET_AIR, "A1:M47", ThisWorkbook, "6A温湿度", "A1", True
-    
-    wb7A.Close SaveChanges:=False
-    wb7B.Close SaveChanges:=False
-    wb6A.Close SaveChanges:=False
-End Sub
-
-'================= フロー：PUE（値貼り付け） =================
-Private Sub Import_PUE_TOK04_ByPath(ByVal puePath As String)
-    If Len(puePath) = 0 Then Err.Raise vbObjectError + 801, , "PUE_TOK04 が見つかりません。"
-    Dim wb As Workbook
-    Set wb = Workbooks.Open(puePath, ReadOnly:=True)
-    ' C7:E7 → SUMMARY3!H12:J12（値貼り付け）
-    CopyBlock wb, wb.Worksheets(1).Name, "C7:E7", ThisWorkbook, "SUMMARY3", "H12:J12", True
-    wb.Close SaveChanges:=False
-End Sub
-
-'================= フロー：結果抽出 → 値で回填 =================
-Private Sub Extract_Monthly_Results()
-    ExtractOne "7A値", "結果抽出7A"
-    ExtractOne "7B値", "結果抽出7B"
-    ExtractOne "6A値", "結果抽出6A"
-End Sub
-
-Private Sub ExtractOne(ByVal sheetValue As String, ByVal sheetResult As String)
-    Dim dst As Range, src As Range
-    With ThisWorkbook
-        Set src = .Worksheets(sheetResult).Range("G4:G29")
-        Set dst = .Worksheets(sheetValue).Range("D3").Resize(src.Rows.Count, 1)
-        dst.Value = src.Value     ' 値のみ
-    End With
-End Sub
-
-'======================== 汎用ツール群 ========================
-' 年月入力（yyyymm）→ 既定は前月
-Private Function PromptYearMonth(ByRef tgtDate As Date, ByRef yyyymm As String) As Boolean
-    Dim defDate As Date, s As String
-    defDate = DateSerial(Year(Date), Month(Date), 1) - 1
-    s = InputBox("処理する年月（yyyymm）を入力してください。" & vbCrLf & _
-                 "未入力の場合は前月を使用します。", _
-                 "対象年月の入力", Format(defDate, "yyyymm"))
-    If s = "" Then s = Format(defDate, "yyyymm")
-    s = Trim(s)
-    If Not IsValidYYYYMM(s) Then
-        MsgBox "入力形式が不正です。（例：202507）", vbExclamation
-        PromptYearMonth = False
-        Exit Function
-    End If
-    yyyymm = s
-    tgtDate = DateSerial(CInt(Left(s, 4)), CInt(Right(s, 2)), 1)
-    PromptYearMonth = True
-End Function
-
-Private Function IsValidYYYYMM(ByVal s As String) As Boolean
-    If Len(s) <> 6 Or Not IsNumeric(s) Then Exit Function
-    Dim y As Integer, m As Integer
-    y = CInt(Left(s, 4)): m = CInt(Right(s, 2))
-    IsValidYYYYMM = (y >= 2000 And y <= 2100 And m >= 1 And m <= 12)
-End Function
-
-' ルール：年フォルダ直下 or 年\yyyymm月分\{BMS•PUE_Monthly_Report 等}
-Private Function ResolveStartFolder(ByVal d As Date) As String
-    Dim yearFolder As String, monthFolder As String
-    Dim cands As Variant, nm As Variant, p As String
-    
-    yearFolder = BuildPath(BASE_ROOT, Format(d, "yyyy") & "年")
-    monthFolder = Format(d, "yyyymm") & "月分"
-    
-    If FolderExists(yearFolder) Then
-        ' 候補1：年直下
-        ResolveStartFolder = yearFolder
-        Exit Function
-    End If
-    
-    ' 候補2群：年\yyyymm月分\{名称ゆらぎ対応}
-    cands = Array("BMS•PUE_Monthly_Report", "BMS・PUE_Monthly_Report", _
-                  "BMS・PUEレポート", "BMS-PUE_Monthly_Report", "BMS_PUE_Monthly_Report")
-    For Each nm In cands
-        p = BuildPath(BuildPath(yearFolder, monthFolder), CStr(nm))
-        If FolderExists(p) Then
-            ResolveStartFolder = p
-            Exit Function
-        End If
-    Next nm
-    
-    ResolveStartFolder = "" ' 見つからず
-End Function
-
-Private Function BuildPath(ByVal p1 As String, ByVal p2 As String) As String
-    If Right$(p1, 1) = "\" Then
-        BuildPath = p1 & p2
-    Else
-        BuildPath = p1 & "\" & p2
-    End If
-End Function
-
-Private Function FolderExists(ByVal folderPath As String) As Boolean
-    FolderExists = (Len(Dir(folderPath, vbDirectory)) > 0)
-End Function
-
-Private Function PickAFolder(ByVal title As String, Optional ByVal initial As String = "") As String
-    With Application.FileDialog(msoFileDialogFolderPicker)
-        .Title = title
-        .AllowMultiSelect = False
-        If Len(initial) > 0 Then .InitialFileName = initial
-        If .Show = -1 Then PickAFolder = .SelectedItems(1)
-    End With
-End Function
-
-' 再帰検索：一致ファイル名を最初に見つけたパスを返す
-Private Function FindFileRecursive(ByVal root As String, ByVal targetName As String) As String
-    Dim fso As Object, f As Object, sf As Object, fi As Object
-    On Error GoTo EH
-    Set fso = CreateObject("Scripting.FileSystemObject")
-    If Not fso.FolderExists(root) Then Exit Function
-    Set f = fso.GetFolder(root)
-    For Each fi In f.Files
-        If StrComp(fi.Name, targetName, vbTextCompare) = 0 Then
-            FindFileRecursive = fi.Path
-            Exit Function
-        End If
-    Next fi
-    For Each sf In f.SubFolders
-        FindFileRecursive = FindFileRecursive(sf.Path, targetName)
-        If Len(FindFileRecursive) > 0 Then Exit Function
-    Next sf
-    Exit Function
-EH:
-    FindFileRecursive = ""
-End Function
-
-Private Sub CopyBlock(ByVal srcWb As Workbook, ByVal srcSheet As String, ByVal srcAddr As String, _
-                      ByVal dstWb As Workbook, ByVal dstSheet As String, ByVal dstAddr As String, _
-                      Optional ByVal valuesOnly As Boolean = True)
-    Dim srcR As Range, dstR As Range
-    Set srcR = srcWb.Worksheets(srcSheet).Range(srcAddr)
-    Set dstR = dstWb.Worksheets(dstSheet).Range(dstAddr)
-    If valuesOnly Then
-        dstR.Resize(srcR.Rows.Count, srcR.Columns.Count).Value = srcR.Value
-    Else
-        srcR.Copy Destination:=dstR
-    End If
-End Sub
-
-Private Function Tag(ByVal fullpath As String, ByVal label As String) As String
-    If Len(fullpath) > 0 Then
-        Tag = "✔ " & label & " : " & fullpath
-    Else
-        Tag = "✘ " & label & " : 見つかりません"
-    End If
-End Function
-
-
-Private Function PromptYearMonth(ByRef tgtDate As Date, ByRef yyyymm As String) As Boolean
-    Dim defDate As Date
+Private Function GetYyyymmFromUser() As String
     Dim s As String
-    Dim msg As String
-    Dim ttl As String
-    
-    defDate = DateSerial(Year(Date), Month(Date), 1) - 1  ' 上月月初-1天=上月
+    Do
+        s = Application.InputBox("処理対象の年月を6桁で入力してください（例: 202507）", "年月入力", Type:=2)
+        If s = "False" Then s = "" ' キャンセル
+        If s = "" Then Exit Do
 
-    ' 先把提示和标题拼好（不用 _ 换行，避免语法问题）
-    msg = "処理する年月(yyyymm)を入力してください。" & vbCrLf & _
-          "未入力の場合は前月を使用します。"
-    ttl = "対象年月の入力"
-
-    s = InputBox(msg, ttl, Format(defDate, "yyyymm"))
-    If s = "" Then s = Format(defDate, "yyyymm")
-
-    s = Trim$(s)
-    If Not IsValidYYYYMM(s) Then
-        MsgBox "入力形式が不正です。(例: 202507)", vbExclamation
-        PromptYearMonth = False
-        Exit Function
-    End If
-
-    yyyymm = s
-    tgtDate = DateSerial(CInt(Left$(s, 4)), CInt(Right$(s, 2)), 1)
-    PromptYearMonth = True
+        If IsValidYyyymm(s) Then Exit Do
+        MsgBox "入力形式が正しくありません。YYYYMM（例：202507）で入力してください。", vbExclamation
+    Loop
+    GetYyyymmFromUser = s
 End Function
-Private Function IsValidYYYYMM(ByVal s As String) As Boolean
-    Dim y As Integer, m As Integer
+
+Private Function IsValidYyyymm(ByVal s As String) As Boolean
     If Len(s) <> 6 Then Exit Function
     If Not IsNumeric(s) Then Exit Function
+    Dim y As Integer, m As Integer
     y = CInt(Left$(s, 4))
     m = CInt(Right$(s, 2))
-    IsValidYYYYMM = (y >= 2000 And y <= 2100 And m >= 1 And m <= 12)
+    IsValidYyyymm = (y >= 2000 And y <= 2100 And m >= 1 And m <= 12)
 End Function
+
+'=============================
+' パス生成＋ファイル検索（あいまい対応）
+'=============================
+Private Function BuildMonthFolder(ByVal yyyymm As String) As String
+    BuildMonthFolder = BASE_DIR & "\" & _
+                       Format$(DateSerial(CInt(Left$(yyyymm, 4)), 1, 1), YEAR_DIR_FMT) & "\" & _
+                       yyyymm & MONTH_DIR_SUFFIX & "\" & SUB_DIR
+End Function
+
+Private Function FindFile(ByVal folderPath As String, ByVal key As String, ByVal yyyymm As String) As String
+    Dim fso As Object, f As Object
+    Dim fName As String
+    Set fso = CreateObject("Scripting.FileSystemObject")
+
+    If Not fso.FolderExists(folderPath) Then
+        Err.Raise vbObjectError + 2001, , "フォルダが見つかりません: " & folderPath
+    End If
+
+    fName = Dir(folderPath & "\*" & key & "*" & yyyymm & "*.xlsx")
+    If fName <> "" Then
+        FindFile = folderPath & "\" & fName
+    Else
+        Err.Raise vbObjectError + 2002, , key & " (" & yyyymm & ") のファイルが見つかりません: " & folderPath
+    End If
+End Function
+
+Private Function OpenByFullPath(ByVal fullPath As String) As Workbook
+    Set OpenByFullPath = Workbooks.Open(fullPath, ReadOnly:=True)
+End Function
+
+'=============================
+' 値貼り付け
+'=============================
+Private Sub CopyValues(ByVal srcSht As Worksheet, ByVal srcAddress As String, _
+                       ByVal dstSht As Worksheet, ByVal dstTopLeft As String)
+    Dim v
+    v = srcSht.Range(srcAddress).Value
+    dstSht.Range(dstTopLeft).Resize(UBound(v, 1), UBound(v, 2)).Value = v
+End Sub
+
+'=============================
+' メイン処理
+'=============================
+Private Sub Import_BMS_and_PUE_ByYyyymm(ByVal yyyymm As String)
+    Dim monthDir As String
+    monthDir = BuildMonthFolder(yyyymm)
+
+    Dim f6A As String, f7A As String, f7B As String, fPUE As String
+    f6A = FindFile(monthDir, "6A", yyyymm)
+    f7A = FindFile(monthDir, "7A", yyyymm)
+    f7B = FindFile(monthDir, "7B", yyyymm)
+    fPUE = FindFile(monthDir, "PUE_TOK04", yyyymm)
+
+    Dim wb6A As Workbook, wb7A As Workbook, wb7B As Workbook, wbPUE As Workbook
+    Set wb6A = OpenByFullPath(f6A)
+    Set wb7A = OpenByFullPath(f7A)
+    Set wb7B = OpenByFullPath(f7B)
+    Set wbPUE = OpenByFullPath(fPUE)
+
+    Dim cur As Workbook: Set cur = ThisWorkbook
+    Dim src As Worksheet, dst As Worksheet
+
+    '--- 7A：PDU/PDP → 7A貼付け A4
+    Set src = wb7A.Worksheets("4. PDU and PDP Equipment")
+    Set dst = cur.Worksheets("7A貼付け")
+    CopyValues src, "A1:O47", dst, "A4"
+
+    '--- 7A：空調 → 6A貼付け A4
+    Set src = wb7A.Worksheets("5. Air Conditioning Equipment")
+    Set dst = cur.Worksheets("6A貼付け")
+    CopyValues src, "A1:O47", dst, "A4"
+
+    '--- 7B：PDU/PDP → 7B貼付け A4
+    Set src = wb7B.Worksheets("4. PDU and PDP Equipment")
+    Set dst = cur.Worksheets("7B貼付け")
+    CopyValues src, "A1:O47", dst, "A4"
+
+    '--- 7B：空調 → 7B温湿度 A1
+    Set src = wb7B.Worksheets("5. Air Conditioning Equipment")
+    Set dst = cur.Worksheets("7B温湿度")
+    CopyValues src, "A1:O47", dst, "A1"
+
+    '--- 6A：PDU/PDP → 6A貼付け A4
+    Set src = wb6A.Worksheets("4. PDU and PDP Equipment")
+    Set dst = cur.Worksheets("6A貼付け")
+    CopyValues src, "A1:O47", dst, "A4"
+
+    '--- 6A：空調 → 6A温湿度 A1
+    Set src = wb6A.Worksheets("5. Air Conditioning Equipment")
+    Set dst = cur.Worksheets("6A温湿度")
+    CopyValues src, "A1:O47", dst, "A1"
+
+    '--- PUE：C7:E7 → SUMMARY&3 H12
+    Set src = wbPUE.Worksheets(1) ' 必要ならシート名を修正
+    Set dst = cur.Worksheets("SUMMARY&3")
+    CopyValues src, "C7:E7", dst, "H12"
+
+    ' クローズ
+    wb6A.Close SaveChanges:=False
+    wb7A.Close SaveChanges:=False
+    wb7B.Close SaveChanges:=False
+    wbPUE.Close SaveChanges:=False
+End Sub
+
+Private Sub Extract_Results()
+    Dim wb As Workbook: Set wb = ThisWorkbook
+    CopyValues wb.Worksheets("7A値"), "E3:O28", wb.Worksheets("結果抽出7A"), "G4"
+    CopyValues wb.Worksheets("7B値"), "E3:O28", wb.Worksheets("結果抽出7B"), "G4"
+    CopyValues wb.Worksheets("6A値"), "E3:O28", wb.Worksheets("結果抽出6A"), "G4"
+End Sub
