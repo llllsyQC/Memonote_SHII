@@ -60,7 +60,7 @@ Private Function BuildMonthFolder(ByVal yyyymm As String) As String
 End Function
 
 Private Function FindFile(ByVal folderPath As String, ByVal key As String, ByVal yyyymm As String) As String
-    Dim fso As Object, f As Object
+    Dim fso As Object
     Dim fName As String
     Set fso = CreateObject("Scripting.FileSystemObject")
 
@@ -81,7 +81,7 @@ Private Function OpenByFullPath(ByVal fullPath As String) As Workbook
 End Function
 
 '=============================
-' 値貼り付け
+' 値貼り付け（Select不要）
 '=============================
 Private Sub CopyValues(ByVal srcSht As Worksheet, ByVal srcAddress As String, _
                        ByVal dstSht As Worksheet, ByVal dstTopLeft As String)
@@ -117,10 +117,10 @@ Private Sub Import_BMS_and_PUE_ByYyyymm(ByVal yyyymm As String)
     Set dst = cur.Worksheets("7A貼付け")
     CopyValues src, "A1:O47", dst, "A4"
 
-    '--- 7A：空調 → 6A貼付け A4
+    '--- 7A：空調 → 7A温湿度 A1   ← 修正：原来误贴到 6A貼付け
     Set src = wb7A.Worksheets("5. Air Conditioning Equipment")
-    Set dst = cur.Worksheets("6A貼付け")
-    CopyValues src, "A1:O47", dst, "A4"
+    Set dst = cur.Worksheets("7A温湿度")
+    CopyValues src, "A1:O47", dst, "A1"
 
     '--- 7B：PDU/PDP → 7B貼付け A4
     Set src = wb7B.Worksheets("4. PDU and PDP Equipment")
@@ -154,9 +154,21 @@ Private Sub Import_BMS_and_PUE_ByYyyymm(ByVal yyyymm As String)
     wbPUE.Close SaveChanges:=False
 End Sub
 
+'=============================
+' 該当月用結果：按你指定的两步回贴逻辑
+'=============================
 Private Sub Extract_Results()
     Dim wb As Workbook: Set wb = ThisWorkbook
-    CopyValues wb.Worksheets("7A値"), "E3:O28", wb.Worksheets("結果抽出7A"), "G4"
-    CopyValues wb.Worksheets("7B値"), "E3:O28", wb.Worksheets("結果抽出7B"), "G4"
-    CopyValues wb.Worksheets("6A値"), "E3:O28", wb.Worksheets("結果抽出6A"), "G4"
+
+    ' 7A：E3:O28 → 7A値!D3； 結果抽出7A!G4:G29 → 7A値!O3
+    CopyValues wb.Worksheets("7A値"), "E3:O28", wb.Worksheets("7A値"), "D3"
+    CopyValues wb.Worksheets("結果抽出7A"), "G4:G29", wb.Worksheets("7A値"), "O3"
+
+    ' 7B：E3:O28 → 7B値!D3； 結果抽出7B!G4:G29 → 7B値!O3
+    CopyValues wb.Worksheets("7B値"), "E3:O28", wb.Worksheets("7B値"), "D3"
+    CopyValues wb.Worksheets("結果抽出7B"), "G4:G29", wb.Worksheets("7B値"), "O3"
+
+    ' 6A：E3:O28 → 6A値!D3； 結果抽出6A!G4:G29 → 6A値!O3
+    CopyValues wb.Worksheets("6A値"), "E3:O28", wb.Worksheets("6A値"), "D3"
+    CopyValues wb.Worksheets("結果抽出6A"), "G4:G29", wb.Worksheets("6A値"), "O3"
 End Sub
