@@ -18,3 +18,36 @@
 SBエンジニアリング風間様よりスケジュール表を受領しました。その後、UPS年次点検と加湿器点検に関する入館者リスト不足について確認を依頼。
 風間様からの回答として、UPS年次点検は10月〜11月にかけて年1回実施予定であり、6A・7Aの入室作業は10/10・10/14・10/31、残りは11/4〜6に行う予定とのことです。作業員情報は後日提出予定です。
 また、最新の10月点検スケジュール表も受領しています。
+
+
+Subject: Request for Approval: Omiya DC Annual Substation Inspection Schedule (September)
+
+Dear Mr. Brazil,
+
+We hope this message finds you well.  
+This is the operator team at the SoftBank Omiya Data Center. Thank you for your patience.
+
+We would like to share with you the MOP (Method of Procedure) for the upcoming annual substation inspection, scheduled during daytime hours from September 2nd to 19th.
+
+The inspections will be carried out according to the following schedule:
+
+■ 6th and 7th Floor Inspections (Sept 3rd, 10th, 18th):  
+Power switching between System 1 and System 2 will be conducted **without any expected power outage**.
+- September 10th: 09:00–09:30 / 16:30–17:00 (6th floor)  
+- September 18th: 09:00–09:30 / 16:30–17:00 (7th floor)
+
+■ Whole Building Inspections (including 6th and 7th floors: Sept 4th, 16th, 19th):  
+These will include power switching between System 1 and System 2 and will involve a **brief power interruption** (approximately 1 minute), affecting **commercial power** only (e.g., lighting and wall outlets), with **no impact to server room equipment**.
+- September 16th: 09:00–09:30 / 16:30–17:00  
+- September 19th: 09:45–10:30 / 17:00–19:00
+
+■ Notes:
+- No workers are expected to enter the IBM area.
+- No nighttime work is scheduled for September.
+- The actual load test is planned for November 25th–26th. We will inform you of the exact schedule separately.
+
+Should you have any questions or concerns, please do not hesitate to contact us.  
+We appreciate your review and look forward to your approval.
+
+Best regards,  
+[你的签名保留即可]
