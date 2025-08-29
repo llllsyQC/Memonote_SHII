@@ -1,53 +1,51 @@
-8月25日 朝礼用報告稿
+Subject: Notification of Power Interruption Due to Annual Inspection Preparations of Power Receiving Equipment
 
-顧客対応
+Dear all,
 
-まず、アラーム無視依頼対応 です。
-サーバ33で超下限アラームが2回発報しましたが、いずれも30秒程度で復旧しており、静観対応としています。
+We hope this message finds you well.
 
-次に、入館申請対応 が複数件ありました。
-	•	IBM Santiago様からの依頼で、8/27〜8/29のUeno様ほか6名について登録し、完了報告を返しています。
-	•	同じくSantiago様から、Uniadex Matsui様ほか2名の入館申請を受け、登録を完了しています。
-	•	さらにSantiago様から、8/27のYamamoto様ほか2名についても申請を受け、登録完了報告まで行っています。
+Please be informed that a brief power outage will occur at the Omiya Data Center as part of the preparations for the upcoming annual inspection of the power receiving equipment. We sincerely apologize for any inconvenience this may cause and kindly ask for your understanding and cooperation.
 
 ⸻
 
-その他
+Details of the Scheduled Power Outage
+	•	Date & Time:
+  Thursday, September 4, 2025
+  08:00 – 20:00 JST (One brief power interruption expected during this period)
+	•	Scope:
+  In preparation for the inspection, electrical switching work will be carried out sequentially within the facility.
+  A momentary power interruption will occur once during the above timeframe, affecting general lighting and standard wall outlets.
+	•	Impact:
+  - There will be no impact on equipment powered by UPS, including communication and air-conditioning systems.
+  - However, if you have any operations that require constant lighting or outlet power, we kindly ask that you take necessary precautions in advance.
+  - No building-wide announcements will be made during the operation as the work is scheduled for off-hours.
 
-10月の月間メンテナンススケジュール対応 です。
-SBエンジニアリング風間様よりスケジュール表を受領しました。その後、UPS年次点検と加湿器点検に関する入館者リスト不足について確認を依頼。
-風間様からの回答として、UPS年次点検は10月〜11月にかけて年1回実施予定であり、6A・7Aの入室作業は10/10・10/14・10/31、残りは11/4〜6に行う予定とのことです。作業員情報は後日提出予定です。
-また、最新の10月点検スケジュール表も受領しています。
+⸻
 
+Annual Inspection Schedule:
+  - Scheduled Period: Wednesday, September 10 to Friday, September 19, 2025
+  - No commercial power outages are expected during the inspection period.
 
-Subject: Request for Approval: Omiya DC Annual Substation Inspection Schedule (September)
+⸻
 
-Dear Mr. Brazil,
+Emergency Generator Load Test:
+  - Scheduled: Thursday, November 26, 2025, 08:00 – 04:00 (next day)
+  - Multiple momentary power interruptions (lasting only a few minutes each) may occur during this test.
+  - Further details will be provided in a separate notice.
 
-We hope this message finds you well.  
-This is the operator team at the SoftBank Omiya Data Center. Thank you for your patience.
+⸻
 
-We would like to share with you the MOP (Method of Procedure) for the upcoming annual substation inspection, scheduled during daytime hours from September 2nd to 19th.
+Contact Information for Inquiries:
+East Japan Network Center – Kanto Maintenance Group 2
+Contact: Mochida (Certified Electrical Engineer)
+Mobile: 090-6015-2966
+Direct Line: 070-6400-0098
 
-The inspections will be carried out according to the following schedule:
+⸻
 
-■ 6th and 7th Floor Inspections (Sept 3rd, 10th, 18th):  
-Power switching between System 1 and System 2 will be conducted **without any expected power outage**.
-- September 10th: 09:00–09:30 / 16:30–17:00 (6th floor)  
-- September 18th: 09:00–09:30 / 16:30–17:00 (7th floor)
+Should you have any questions or concerns, please do not hesitate to reach out.
 
-■ Whole Building Inspections (including 6th and 7th floors: Sept 4th, 16th, 19th):  
-These will include power switching between System 1 and System 2 and will involve a **brief power interruption** (approximately 1 minute), affecting **commercial power** only (e.g., lighting and wall outlets), with **no impact to server room equipment**.
-- September 16th: 09:00–09:30 / 16:30–17:00  
-- September 19th: 09:45–10:30 / 17:00–19:00
+Thank you for your continued cooperation.
 
-■ Notes:
-- No workers are expected to enter the IBM area.
-- No nighttime work is scheduled for September.
-- The actual load test is planned for November 25th–26th. We will inform you of the exact schedule separately.
-
-Should you have any questions or concerns, please do not hesitate to contact us.  
-We appreciate your review and look forward to your approval.
-
-Best regards,  
-[你的签名保留即可]
+Best regards,
+[Your Name / Department / Company Signature if needed]
