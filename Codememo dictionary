@@ -1,60 +1,146 @@
-。Subject: Notification of Power Interruption Due to Annual Inspection Preparations of Power Receiving Equipment
+9月2日 朝礼用報告稿
 
-Dear all,
+顧客対応
 
-We hope this message finds you well.
+まず 入館申請対応 です。IBM Paredes様から9/10の搬出申請があり、受領確認後、来訪者システムに登録し完了連絡まで対応しました。
 
-Please be informed that a brief power outage will occur at the Omiya Data Center as part of the preparations for the upcoming annual inspection of the power receiving equipment. We sincerely apologize for any inconvenience this may cause and kindly ask for your understanding and cooperation.
-
-⸻
-
-Details of the Scheduled Power Outage
-	•	Date & Time:
-  Thursday, September 4, 2025
-  08:00 – 20:00 JST (One brief power interruption expected during this period)
-	•	Scope:
-  In preparation for the inspection, electrical switching work will be carried out sequentially within the facility.
-  A momentary power interruption will occur once during the above timeframe, affecting general lighting and standard wall outlets.
-	•	Impact:
-  - There will be no impact on equipment powered by UPS, including communication and air-conditioning systems.
-  - However, if you have any operations that require constant lighting or outlet power, we kindly ask that you take necessary precautions in advance.
-  - No building-wide announcements will be made during the operation as the work is scheduled for off-hours.
+次に アラーム無視依頼対応 です。サーバ33で超下限アラームが3件発生しましたが、いずれも30秒台で復旧しており、静観対応としています。継続案件のため、引き続き注意が必要です。
 
 ⸻
 
-Annual Inspection Schedule:
-  - Scheduled Period: Wednesday, September 10 to Friday, September 19, 2025
-  - No commercial power outages are expected during the inspection period.
+障害対応
+
+特に報告事項はありません。
 
 ⸻
 
-Emergency Generator Load Test:
-  - Scheduled: Thursday, November 26, 2025, 08:00 – 04:00 (next day)
-  - Multiple momentary power interruptions (lasting only a few minutes each) may occur during this test.
-  - Further details will be provided in a separate notice.
+その他
+
+まず BMSアラーム対応（サーバ133超下限） です。断続的に発報が続いたため、一時的に閾値を延長して様子を見ました。その後、IBM Hardesty様より作業終了と確認が取れたため、設定を元に戻しています。
+
+次に 設備業者申請対応（耐震補強調査） です。顧客倉庫のラック補強について、9月5日または8〜12日の間で調査を希望する依頼がありました。日程確定は次勤務帯への引継ぎとなります。
+
+空調機操作対応（7Aバランス調整） では、東側に稼働が偏っていたため、複数台の稼働・停止を調整し、全体のバランスを取り直しました。
+
+SB拠点リーダーMTG が開催され、進行はIDCF茂木氏です。
+
+FY2025受変電設備点検スケジュール については、IBMオフィスUPSの接続系統を確認し、停電の影響範囲についてIDCF加藤氏から回答を受けています。9/16と9/19に短時間の停電が予定されており、UPS・空調への影響可能性がありますので注意が必要です。
+
+大宮NWC 7F設置APの不具合問合せ がSBネットワーク運用課から入りました。IDCF元木氏の判断で大宮OPは静観としていますが、今後の指示次第で対応が発生する可能性があります。
+
+10月メンテナンススケジュール対応 では、IBM様へUPS年次点検工程表を送付し、年次点検以外の作業について承認を受領しています。UPS関連は継続して調整が必要です。
+
+空調機操作対応（7A下限） では、北西側で20.5℃を下回ったため、空調機を停止し、3:06に復旧確認を行いました。
 
 ⸻
 
-Contact Information for Inquiries:
-East Japan Network Center – Kanto Maintenance Group 2
-Contact: Mochida (Certified Electrical Engineer)
-Mobile: 090-6015-2966
-Direct Line: 070-6400-0098
+KIX11業務
 
-⸻
+S210A空調機の異音対応 について、IBM Kang様より問い合わせがありました。現在も当該空調機はオフラインのままで、本日予定のメンテナンスで交換が実施されるのか、復旧見込みを確認するよう依頼されています。
 
-Should you have any questions or concerns, please do not hesitate to reach out.
+9月3日 報告
 
-Thank you for your continued cooperation.
+顧客対応
 
-Best regards,
-[Your Name / Department / Company Signature if needed]
-Please note that we have received updated information from the Building Management team, which differs from the earlier notice.
+本日は特記なしです。（入館・荷物・個別依頼は発生していません）
 
-While there will be no power outage during the main inspection period (September 10–16), a brief momentary power interruption will occur once between 08:00 and 20:00 on September 4.
-This is due to preliminary work required prior to the annual inspection, involving the sequential switching of the lighting and power distribution systems across facility floors.
+障害対応
 
-Regarding the wall outlets in the office area, some may be connected to the UPS system.
-The NW rack is also most likely powered by UPS, but we are currently checking with the responsible personnel to confirm.
+特記なしです。
 
-Additionally, we will provide the full work schedule including the September 3 task, as requested.
+その他
+
+1）空調機操作（7A）午前の山
+	•	10:19、中央が24.5℃超で発報→PAC-7-3-31を投入し一旦復旧。
+	•	10:24以降、北西が再上昇。18→停止→17→20と切替、10:35に上上限26.1℃まで上がったため、扉開放の有無をIBM Yip様立会いで確認（開放なし）。
+	•	上昇開始時刻が10:22と判明したため、それ以前に入れた31を停止。10:47（上上限）、11:04（上限）ともに復旧を確認。
+👉 引継ぎ：現時点安定。午前帯の上昇は機器負荷変動の可能性。しばらく北西グラフの勾配を注視。
+
+2）大宮NWC 7F AP状態確認（継続トラッキング）
+	•	元木さん→SB大橋さん経由で「詳細確認のうえOPへ依頼予定」と連絡。
+	•	OP側でNWラック「OMYO7FL2001」配下のAPポート（AP001-1/2）とLED色を実見。001〜003＝緑、004＝青を報告。→亀さん所見：緑＝正常、青＝正常かつ接続中で問題なし。
+	•	SB池ノ谷さんより「AP直下でWi-Fi接続→青点灯確認を」との検証依頼。9/5 15:00 実施で調整済み。
+👉 引継ぎ：9/5 15:00に現地確認実施、結果はメールで報告指定（スレッドは池ノ谷さん側／内部連絡のいずれでもOKと確認済）。
+
+3）月間メンテ（10月）
+	•	IBM Santiago様から承認受領。
+👉 引継ぎ：個別作業の細目は順次アサイン、変更入り次第共有。
+
+4）空調機操作（7A）夜の底
+	•	19:06、北西が20.5℃下回り下限発報（2回）。静観→19:15にPAC-7-3-17を停止。19:19復旧、20:30安定を確認。
+👉 引継ぎ：夜間は下振れ傾向。過冷にならないよう停止台数多めに注意。
+
+KIX11 業務
+
+1）月次レポート送付フロー
+	•	笹木さんから「準備完了→SB確認待ち」。小此木さんOK後、笹木さんからIBM送付指示。
+	•	併せて、BMS Monthly ReportのSummary赤字表示が8月だけでなく7月にも残っている件を笹木さんへ報告済。
+👉 引継ぎ：表示修正の反映確認を依頼中。最新版で色味誤表示がないかチェック。
+
+2）S210A空調機 異音の件（継続）
+	•	MCDR上宇都さんより：今回の基板交換ではCRAH-10のファン交換は未実施。別途ファンを購入し、納期・金額を調整中。日程は追って連絡。Kang様了承。
+
+9月4日 報告
+
+顧客対応
+
+① 入館申請（9/8搬出・Paredes様）
+15:01に申請受信→同時刻、警備・遠藤さんへ搬入口確認＝使用可。15:10受領連絡送付、15:11システム登録、15:37登録完了を通知済み。引き継ぎ不要です。
+
+② 入館申請（9/5搬出・Paredes様）
+17:26に申請受信→17:35、警備・木下さんへ確認＝使用可。17:36受領連絡送付、17:46システム登録まで実施（完了連絡の記録は本日時点なし）。後続はメール履歴の確認のみお願いします。
+
+障害対応
+
+本日は該当なし。
+
+その他
+
+③ 空調機操作（7A）
+9:58に北西側が下限20.5℃割れのアラーム。9:59にPAC-7-3-20を停止。17:00時点で安定。引き継ぎ不要。
+
+④ NWC 7F AP状態確認の問合せ
+9:59に大橋さん宛メールのCCを受信。10:02「直接スレッドで返信OK」の指示、10:12に元木さんへ了解を回答しました。
+
+⑤ 空調機操作（6A）
+10:51 中央北、10:52 北西で下限アラーム。10:53 PAC-6-3-15停止（北西復旧）、11:14 中央北が20.3℃まで下がったためPAC-6-3-32停止。11:20復旧、12:45安定確認。引き継ぎ不要。
+
+⑥ 設備業者申請（耐震補強の現地調査）
+12:10にSantiago様へ9/10 13:00–17:00で許可依頼を送付→15:05許可受領。15:50に風間様へ報告と作業員リスト提出を依頼。
+👉 引き継ぎ：作業員リストの受領待ち／9/10の入室対応。
+
+⑦ 台風接近の正常性報告
+12:20に天澤さんから指示。9/5は8:00／13:00／18:00で報告、9/6以降は未定。
+👉 引き継ぎ：9/5の報告スケジュール対応。
+
+⑧ 週次定例会議
+13:00 大宮DCの週次定例会議に参加。
+
+⑨ 月間メンテ（10月）
+IBM Brazil様からUPS年次点検を含む作業承認を受領。風間様へ「全作業承認済み」と報告済み。引き継ぎなし。
+
+⑩ DMARC仕様変更（顧客通知の説明）
+元木さんしゅかんで、SBのDMARCポリシー変更に伴う顧客通知について説明しました。
+
+⑪ 搬入口使用不可の連絡
+14:02、鈴木さんより連絡。9/25 13:00–17:00は搬入エレベーター点検で搬入口が使えません。
+
+⑫ DMARCポリシー変更の通知文対応
+18:09、IBM向け日本語文案（大宮版）を元木さんへ提示し、可否確認依頼済み。
+👉 引き継ぎ：承認戻り次第、送付準備。
+
+⑬ 設備業者（TOB追加工事の現地調査）の入館申請
+23:14、大橋さんから9/8 14:00–15:00で現地調査依頼。
+👉 引き継ぎ：当日の入室エスコート対応。
+
+⑭ 空調機操作（7B）
+早朝、東側両列で下限アラーム（〜5:07で計7回）。PAC-7-4-2停止→上がらずPAC-7-4-5も停止。5:07に復旧し安定。引き継ぎ不要。
+
+KIX11業務
+
+⑮ 月次レポート送付対応
+朝、笹木さんから赤字部分について問い合わせがありましたが、更新分であることを確認済みです。IBM様への提出を進めてもらうよう回答しました。午後にはIBM宛にダウンロードリンクを送付し、提出完了の報告まで行っています。
+
+
+
+
