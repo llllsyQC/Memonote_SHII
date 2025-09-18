@@ -1,5 +1,22 @@
-Regarding the matter you reported, we conducted an internal investigation and identified the customer who had used the relevant email address.
+その他
 
-We have informed the customer of your report and requested that they take appropriate action.
+まず 受変電設備点検に伴う業者入館対応 です。
+朝、小杉様から追加の作業員リストを受領しました。その後、SBエンジニアリング風間様が来室し、電源室に入室。IBM Santiago様、Brazil様へは作業開始の連絡を送っています。
 
-As of today, we have received a response from the customer confirming that they have reviewed the matter and will take action accordingly.
+続いて BMSアラーム静観依頼対応 です。
+点検に伴い、電源系の切替でアラームが複数発報しました。風間様から「作業影響のため静観」との依頼を受けています。実際に不足電圧や過電流のアラームが出ましたが、報試験の影響とのこと。16時頃まで断続的に発報する想定のため、静観対応で引き継ぎです。
+
+次に 空調機操作対応（7B東側） です。
+10時過ぎに湿度60％超と温度下限アラームが同時に発報しました。PAC-7-4-26とPAC-7-4-3を停止し、11時過ぎには温湿度とも安定を確認しています。
+
+次に IDCFからの翻訳依頼対応（吹田DC案件） です。
+中村氏へ英訳を送付し、その後「申告者へ送る」との返信を受領しています。
+
+続いて 空調機操作対応（7A南西側） です。
+12時頃に温度が24.5℃を超えてアラーム発報。PAC-7-3-10を稼働させ、静観のうえ20分頃には温度安定を確認しました。
+
+次に 機器室清掃の業者対応 です。
+SmartBXの高木様・妙中様が来室。7A・7B・6Aの各機器室で清掃を実施しました。エスコートはIBM De Roxas様、Ernest様に対応をお願いし、14時過ぎに作業終了報告を受領。終了後はSBエンジニアリング担当者、およびIBM Santiago様・Brazil様へ作業開始・終了の報告を送っています。
+
+最後に 週次定例会議 です。
+大宮DCの定例会議を実施し、IDCF元木氏、茂木氏ら関係者、OP森田が出席しています。
