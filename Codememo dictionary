@@ -1,27 +1,2 @@
-S210A Temperature SLA Exceeded
-On 10/14 at 14:26, the room temperature in S210A exceeded the SLA threshold of 27.0°C for 3 minutes.
-
-KIX11 Fire Incident Confirmation
-A fire occurred in a tenant office on the 3rd floor, and all building occupants evacuated to the outside. After safety was confirmed, the evacuation order was lifted.
-	•	Upon receiving the fire alarm signal, the air-conditioning units in the IBM office were stopped, but operation was restored by IBM after the alarm signal ceased.
-	•	No impact was observed on security systems.
-
-09/11 – IBM Brazil requested clarification on whether the fire alarm is activated only on the affected floor or throughout the entire building.
-=MCDR responded that the fire alarm on the 3rd floor was triggered, and announcements were made on both the 3rd and the floor directly above (4th), confirming normal system operation.
-
-09/12 – IBM Brazil inquired why evacuation was carried out even though no fire alarm sound was heard.
-
-09/17 – =MCDR explained that IBM personnel voluntarily evacuated upon hearing the announcement. According to MCDR policy, all occupants are required to temporarily evacuate regardless of the specific area where the fire occurs, in order to ensure safety.
-
-09/18 – IBM Oswald raised future improvement points, including the audibility of alarm sounds inside the server room, full evacuation procedures, drills, and signage.
-
-09/22 – =MCDR responded that regular evacuation drills will be conducted based on this experience.
-
-10/14 – =MCDR notified that an evacuation drill will be held on 10/28.
-
-
-09/30 – Confirmed with IBM Oswald regarding the new contact email address and phone number to be used in place of Mr. Kang.
-
-10/14 – MCDR reported that the issue was likely caused by a temporary shutdown of all pumps. The cause of the shutdown is under investigation.
-
-10/14 – IBM Brazil requested responses to the “Data Center Survey” and “Lighting Survey.”
+There will be many alarms today because of the UPS annual inspection. Please just ignore them.
+The inspection for today has finished. You can resume monitoring the alarms now.
