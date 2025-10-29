@@ -1,70 +1,22 @@
-🔹10月24日（日報・口頭報告用）
+Subject: [Omiya] Additional Seismic Reinforcement Measures for Storage Room Shelves
 
-まず顧客対応からです。
-午前10時より大宮ファシリティの月次ミーティングを実施しました。
-IBM側はFacilitiesチームとOpsチームの皆様が参加され、IDCF・SB・OPも含めた合同会議でした。
-議題としては主に進行中の改善案件と課題管理表の確認で、会議後に課題一覧を整理してBrazil様へ送付しています。
+Dear Mr. Santiago and Mr. Brazil,
 
-⸻
+This is the SoftBank Omiya Data Center operator office.
+We would like to consult with you regarding the additional seismic reinforcement measures for the storage room shelves, based on the findings from a recent disaster prevention inspection.
 
-続いて障害対応です。
+During the monthly meeting in September, Mr. Brazil mentioned that bolting is not necessary since these are not regular shelves. However, as these findings were raised during a statutory inspection, some additional measures are required.
 
-まず、深夜に機器室7Aの空調機PAC-7-3-29で重故障アラームが発報しました。
-発報直後に停止操作を行い、SBエンジニアリングの和久津様が現地確認を実施。
-調査の結果、通信異常が原因であり、ベンダー対応が必要との判断でした。
-アラームは一時的に復旧しましたが、同機器は現在停止中で、復旧までは他の空調機で室温を維持しています。
-IBM Paredes様にも現地で報告し、Santiago様・Brazil様へはメールで詳細を共有、FastHelp5にもチケット（No.40455）を起票済みです。
+Therefore, we are planning to implement seismic reinforcement measures using tension rods (or/and wedges), as shown in the attached diagram.
+Please note that it may be necessary to temporarily move the shelves during the work.
 
-また同じ時間帯、7A北西側では温度の内部閾値を下回るアラームが発生しましたが、
-1台停止の上で4時半には安定を確認しています。
+SoftBank will cover all installation costs.
 
-さらに、正午過ぎには7Aの監視設備7CP-1盤で一時的な通信異常アラーム（ZAD354）が発生しました。
-9秒で自然復旧し、SB水谷様確認のもと「問題なし」と判断しています。
-大宮MLにも報告済みです。
+If there are no issues with this plan, we will proceed with scheduling the work.
+Please feel free to contact us with any questions or comments.
 
-⸻
-
-次にその他の対応です。
-
-本日もUPS年次点検が継続して行われました。
-SB小杉様とMPEC土田様がBMS試験を実施し、IBM De Guzman様の了承のもとアラーム無視・解除対応を行いました。
-夕方には全作業が無事完了し、発報した7件のアラーム無視も含めIBM Santiago様・Brazil様へ報告しています。
-
-加えて、午後には空調機の点検対応があり、SB水谷様・平野様が7Bおよび6Aの機器室で確認作業を実施。
-IBM側のエスコートを得て作業を進め、最終的に問題なしで終了しました。
-こちらもIBM側へ開始・終了報告済みです。
-
-そのほか、15時47分ごろに大宮DCで地震を検知しましたが、
-さいたま市大宮区で震度1、県内最大でも震度2と小規模であり、特別な対応は行っていません。
-
-⸻
-
-最後にKIX11関連です。
-IDCF金氏より、カーテン不具合対応に伴うキャッピング変更作業（11月6～7日予定）について、
-10月28日に現地確認を実施したいとの申請を受領しました。
-IBM Oswald様へ許可依頼のメールを送付済みで、次勤務帯へ引き継いでいます。
-
-🔹10月25日（日報・口頭報告用）
-
-まず顧客対応です。
-本日、機器室6Aのサークルゲートで入室トラブルが発生しました。
-IBM Carpio様が使用していたテンポラリーカード111でゲートを通過できず、
-ゲート内で再度カードをかざすと元の扉が開いてしまうという現象でした。
-
-カード不良を疑い、テンポラリー116と交換しても状況は変わらず、
-一方でOP側カードでは問題なく通過できることを確認。
-試行の結果、Carpio様が黒いパーカーを着ている場合にのみセンサーが反応せず、
-パーカーを脱いだ状態では通過可能であることが判明しました。
-
-SBエンジニアリングの平野様にも確認を依頼し、現地でIBM側と一緒に検証を実施。
-結果として、装置の故障ではなく、服装の全身黒によるセンサー誤検知が原因と結論づけています。
-同現象の再発防止として、FastHelpに［40465］として記録済みです。
-
-⸻
-
-続いてその他です。
-BMSでサーバNo.94のT相における電流超下限アラームが複数回検知されました。
-同一回路（BHA780 BUSWAY B6 タップオフNo.54 回路103）で、
-18時17分から翌朝5時台まで、計7回ほど断続的に発報しています。
-いずれも1分程度で自然復旧しており、他相への影響はなく静観対応としています。
-現時点では一過性のものと判断し、引き続き様子を確認します。
+Best regards,
+SoftBank Corp.
+Omiya Data Center
+Phone: 048-612-9544
+Mobile: 070-1472-9317
