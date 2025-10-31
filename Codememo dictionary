@@ -1,80 +1,47 @@
-🔹10月28日（日報・口頭報告用）
+Subject: Request for Work Approval – S210A / S220A Cabling Modification
 
-まずその他からです。
+Dear IBM Team,
 
-朝からサーバNo.94のT相に関する電流超下限アラームが続けて発生しました。
-いずれもBHA780 BUSWAY B-6 タップオフNo.54 回路103で検知され、
-発報からおおよそ1分程度で自然復旧。
-日中にかけて20時半ごろまで合計で3回発報していますが、
-全て一過性であり、静観対応としています。
+We would like to request approval to proceed with the following work at the Omiya DC:
 
-次に、外部DCF英語補佐に関する問い合わせがありました。
-IDCF片寄氏から新たに生駒DCを対象に追加したいとの相談があり、
-既存の運用担当として片寄氏から情報を提供いただければ対応可能である旨を回答。
-その後、現行の外部DCF英語補佐手順書を参考資料としてメールで送付しています。
+Work details
+	•	Scope: S210A / S220A cabling modification
+	•	Contractor: Comany / IDCF
+	•	Work date/time: [insert date/time]
+	•	Entry: [X] persons planned
 
-午後はUPS年次点検のBMS試験が実施されました。
-SBエンジニアリング沖野様とMPEC土田様がOP室に来室し、
-IBM Yip様の了承のもとアラーム無視を依頼して試験を開始。
-複数回に分けて試験を行い、最終的に問題なく終了しています。
-終了後はIBM Diola様へ無視解除の依頼を行い、
-IBM Santiago様・Brazil様へも7件分のアラーム無視を含む作業完了報告を送信しました。
+Personnel list
+Comany
+	•	Yamato Masaya — 080-6354-9219 / m-yamato@po.comany.co.jp
+	•	Mukomoto Yuta — 090-9766-2978 / grandzero69@icloud.com
+	•	Okamura Sachio — 090-5647-5475 / 807yanyan@gmail.com
+	•	Okamura Masahiro — 090-8207-9808 / masa19550318@gmail.com
+	•	Asakura Naoya — 090-1953-4703 / asakura_708@yahoo.co.jp
 
-また、顧客倉庫の防災対象物に関する是正事項について、
-IDCF側より「耐震補強は突っ張り棒のみで、楔は不要との確認が取れた」との報告を受領しています。
-この件は継続案件として次勤務帯へ引き継いでいます。
+IDCF
+	•	Tanibuchi Yuji — 080-3210-7352 / ytanibuchi@idcf.jp
+	•	Kim Doheon — 070-1642-2538 / dkim@idcf.jp
 
-さらに、翌日予定のUPS年次点検に向けて、
-SB風間様・沖野様・MPEC中島様らが7名体制で電源室に入室準備を行い、
-SB小杉様・鬼崎様には電源室カードを貸し出しています。
+Notes
+	•	The room entry limit is five people; however, five engineers plus one IDCF supervisor are planned.
+Could you please confirm whether six people may enter, if required?
 
-⸻
+Tools to be brought in
+	•	Impact driver
+	•	Step ladder
+	•	Scale
+	•	Drill
+	•	Cutter knife
+	•	Plus/minus screwdriver
+	•	Wrench
+	•	Hammer
+	•	Parts cleaner
+	•	Waist pouch
+	•	Cart
+	•	Laser tool
+(No other power tools will be used)
 
-KIX業務です。
+Please confirm whether this work can be carried out as planned.
+If you have any concerns or require additional information, please let us know.
 
-TOB訓練のスケジュール調整について、
-IBM Oswald様へ11月12日実施予定の訓練日程に関して、再度回答を催促しています。
-
-また、9月の電源系インシデント（火災）に関しては、
-IDCF笹木氏よりSB湊氏へのメールで、MCDRからアップデートされた報告書が提出されたとの連絡があり、
-関係各所へ共有対応が進められています。
-
-🔹10月29日（日報・口頭報告用）
-
-まず顧客対応からです。
-
-BMS月次レポート（9月分）に関して、IBM Takata様から数式や算出基準に関する照会がありました。
-SB寿村様を通じて打ち合わせの調整依頼が入り、参加者の中にオーストラリア東部時間帯のメンバーが含まれる可能性があるため、日程設定時には時差を考慮するよう追記されています。
-
-IDCF側では笹木氏・金氏・笹本氏が報告書作成を担当し、MTG候補日として「11月6日（11時～12時／13時～14時）」または「11月13日（13時～14時）」が提示されました。
-このうちTakata様からは「11月6日11時～12時（JST）」を希望され、同時にBMS月次レポートに関して以下の2点の質問を受領しています。
-1点目は「Load factor」シート内のkW値が月末日のPDBレポート値を採用している理由、
-2点目はその他算出方法の確認に関する内容です。
-
-寿村様からは、これらの質問をメールで回答し、IBM側が納得すればMTG自体は不要とする方針を共有。
-現在、IDCF笹木氏が回答内容の作成を進めており、必要に応じて11月6日に打ち合わせを実施する予定です。
-
-⸻
-
-次にその他です。
-
-UPS年次点検の継続対応が行われました。
-朝、IBM Santiago様・Brazil様へ作業開始連絡を行い、SB風間様がOP室のEMS端末で作業を実施。
-この際、顧客オフィスのBMS端末でアラームが複数発報したため、IBM Brazil様から問い合わせが入りました。
-
-SB柳様・水谷様とも確認した結果、英語版端末のみで警報除外設定が反映されていなかったことが原因でした。
-OP側では試験開始前に警報機除外設定を行っていましたが、1階と7階は連動していた一方、英語版だけ独立しており、除外漏れで発報したものと判明。
-現場でIBM Diola様・Cunanan様に「作業影響である」旨を説明し、Brazil様にもメールで報告済みです。
-
-その後、SB沖野様よりシーケンサー盤の点検実施連絡があり、これに伴いアラームが再度発報。
-IBM Diola様にアラーム無視を依頼し、試験後は小杉様が除外設定を解除して作業を完了しています。
-なお、BMS試験終了後も一部漏電警報が発報予定であるとの説明を受けています。
-
-⸻
-
-最後にKIX11業務です。
-
-まず、Site Observation／Findingsに関して、Takata様から壁・床改修分の請求書発行依頼があり、
-IDCF笹木氏・浜口氏へ共有しました。
-その後、MODR坂上様よりIDCF金氏へ請求処理の可否確認が入り、
-金氏より「問題なし」との回答をもって請求処理を進める方針となっています。
+Thank you in advance for your cooperation.
