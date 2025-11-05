@@ -183,3 +183,74 @@ Takata様もこれを了承しています。
 訓練の開始時間、Oswald様の連絡先、使用するTOB番号とブレーカー番号、
 訓練資料の英訳およびお客様への送付、さらに入室人数の確認です。
 これらは次勤務帯へ引き継ぎ対応となります。
+
+
+📞 电话脚本：带“陪同安排确认”
+
+你
+
+Good morning, this is Li from SoftBank Omiya Data Center Operations.
+May I speak with Mr. Oswald, please?
+
+Oswald
+
+Speaking.
+
+你
+
+Good morning, Mr. Oswald.
+I’m calling regarding the access request for Data Hall S210A / S220A for today’s capping work.
+
+Our contractors are already on standby, so I would like to kindly confirm if we may proceed with entry today.
+
+Oswald
+
+Yes, you may proceed.
+
+你
+
+Thank you very much.
+We have 5 workers arranged for now, and if possible we may increase to 7, but currently it is 5.
+
+Before we start, may I also confirm escort procedure?
+
+Since you are working remotely,
+should we press the Data Hall bell, or will there be a local IBM staff to escort us?
+If so, could you kindly advise the contact method?
+
+Oswald — 可能回应 A：按门铃
+
+Yes, please press the bell. Our onsite team will support.
+
+你
+
+Perfect, thank you.
+
+⸻
+
+Oswald — 可能回应 B：打电话给现场某人
+
+Please call <name/phone number>. They will escort you.
+
+你
+
+Thank you. I will contact them when the team arrives.
+
+⸻
+
+Oswald — 可能回应 C：需要先跟现场确认一下
+
+Let me check who is onsite.
+
+你
+
+Thank you.
+We will wait for your instruction on who to contact for escort.
+
+⸻
+
+你（收尾）
+
+Great, thank you again for your support, Mr. Oswald.
+We will proceed as instructed.
+Have a great day.
