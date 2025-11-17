@@ -1,28 +1,14 @@
-Thank you for your follow-up and additional feedback.
-Please see our responses below.
+今回の作業を延期した場合、機器ベンダーや関連作業者に追加コストが発生する可能性があるという点については、当方も理解しております。
 
-⸻
+つきましては、作業を延期した場合に発生し得るコストの概算（ラフな見積もり）をご提示いただくことは可能でしょうか。
 
-Q: Will live streaming within IBM also occur during the actual event?
-A: Yes, live streaming will also be conducted during the actual event.
+また、以下の点について当方の理解が正しいかご確認をお願いいたします。
+予定している作業ウィンドウを超えて延期した場合、以下のような重大な運用リスクが生じる可能性があるという理解でよろしいでしょうか。
+	•	電源冗長性を維持するために重要な発電機システムの信頼性が低下するリスク
+	•	予防保全のスケジュールや契約上の義務との整合性にずれが生じる可能性
+	•	今後のピーク需要期に向けて発電機の性能確認が行われない場合、計画外停止のリスクが高まる可能性
 
-⸻
+これらを踏まえると、本テストは計画どおりのタイミングで実施することが、システムのレジリエンス確保および運用継続性の観点から極めて重要であると考えております。
 
-(1) Will a Zoom call also be conducted during the actual event?
-→ At this stage, Zoom usage is expected only between MCDR and IDCF during the actual event.
-Information sharing during the event will be handled through the existing communication routes.
-
-⸻
-
-(2) Suggested Action ① — Updating the TapOff Emergency Operation Flow
-→ We will also review and update the procedure on the Omiya OP side and provide a proposal.
-
-⸻
-
-(2) Suggested Action ② — Strengthening coordination across and within teams to improve response time and familiarity with procedures
-→ We will consider this improvement.
-
-⸻
-
-Please let us know if any further clarification is needed.
-Thank you as always for your cooperation.
+次のステップを確定するためにも、ご回答をお待ちしております。
+よろしくお願いいたします。
