@@ -1,47 +1,36 @@
-🔹11月17日（日報・口頭報告用）
-
-■ 顧客対応
-
-今日は IBM Paredes 様から、搬出に関する入館申請が 2 件ありました。
-まず 11/26 の搬出 について申請を受け取り、警備室へ搬入口の利用可否を確認したところ問題なし。
-そのあと受領連絡を入れ、来訪者受付システムに登録して完了メールを返しています。
-
-続いて 11/19 の搬出分 も同様に申請を受領。
-こちらも搬入口は使用可能だったため、同じ流れで受付システムに登録し、完了連絡済みです。
 
 ⸻
 
-■ 障害対応
+Subject: Result of investigation on circle gate malfunction on 25 October
 
-BUSWAY A-5 の通信異常について、
-11/15 から継続で BAD513 が復旧と再発を繰り返している状況 です。
-夜勤帯の 8:30 までに 計35回 発報しており、「復旧後3分で再発」を延々と繰り返している状態です。
-状況は継続中で、引き続き次勤務帯へ共有しています。
+Dear IBM Team,
 
-⸻
+This is [your name] from the Omiya Data Center Operations team.
 
-■ その他
+Regarding the circle gate passage issue that occurred on 25 October, we have completed our investigation together with the equipment vendor. Please find the summary of the results below.
+	1.	Condition of the equipment
 
-まず BUSWAY 不具合の関係で、IDCF 加藤様より緊急で来館依頼がありました。
-受付システムへの登録を行い、証跡としてメールも受領済みです。
-来館後に機器室7Bの入室有無も確認しましたが、今回は入室不要とのことでした。
+	•	A detailed inspection by the manufacturer on 18 November confirmed that there is no abnormality in the circle gate hardware or control system.
 
-続いて、11月のメンテナンススケジュール関連 です。
-実負荷試験が IBM のモラトリアム期間と重なる件で、
-Brazil 様より「延期可能か」「延期のリスク」「追加費用」などの質問が入りました。
-内部確認の結果、
-	•	ビル管理側の作業で延期不可
-	•	期間内に代替日程を確保できない
-	•	延期するとベンダー側で追加費用が発生
-という回答になっています。
+	2.	Investigation results
 
-この内容は IBM 側に報告済みで、追加で「延期時の概算費用」「リスク詳細」の照会が入ったため、再度 IDCF 側へ共有しています。
+	•	The “one-person check” inside the gate is performed using several sensors: a transmissive sensor, a mat switch and a weight sensor.
+	•	According to the manufacturer, it is highly likely that the card-reader part of the gate passed through the transmissive sensor and was therefore mis-detected as “two persons entering”.
+	•	As the transmissive sensor is an optical type, the colour of clothing (including black clothes or gloves) does not affect the detection.
+	•	During on-site simulations, we confirmed that if a person stands with their feet slightly apart on the mat and shifts their weight from side to side, the weight sensor may not detect the person correctly, which can cause an error and prevent smooth passage.
+	•	The sensors are installed at approximately 30 cm and 80 cm from the floor, so the body needs to be close enough to the card reader / back side of the gate to be detected reliably.
 
-⸻
+	3.	Preventive actions
 
-■ KIX11（TOB訓練関連）
+	•	We will prepare and share usage instructions for the circle gate, including guidance such as:
+	•	When entering, stand with both heels on the inner line marked on the floor.
+	•	Avoid standing too far away from the card reader or leaning back while the one-person check is being performed.
+	•	Avoid excessive body movement or shifting weight from side to side until the gate has completed the check.
+	•	Internally, this case is being handled under our “Problem Management” process rather than as an incident, and we will continue to monitor the situation.
 
-TOB トリップ訓練の議事録について、IBM Takata 様から回答があり、
-Zoom 配信の扱いについての追加質問がありました。
-IDCF・MODR 間では Zoom を使う方針で、IBM 参加を希望する場合は検討する、という方向で調整中です。
-回答案は IDCF 側ともすり合わせており、「Zoom は MCDR と IDCF 間で使用」の方針で問題ないとの確認を得ています。
+We hope this explanation clarifies the cause of the event and our preventive measures.
+If you have any questions or require further technical details from the manufacturer, please let us know.
+
+Kind regards,
+[Your name]
+Omiya Data Center Operations
