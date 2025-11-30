@@ -249,3 +249,21 @@ Sub Process_Ver52(ByVal yyyymm As String, _
 ERR_HANDLER:
     ErrorRollback "", "Process_Ver52 でエラー :" & Err.Description
 End Sub
+
+
+    '=== 月次工数集計シート側は閉じる ===
+    wbSource.Close SaveChanges:=False
+
+    '=== 「月次工数集計シート」の保存先フォルダを開く（如果你还想开的话）===
+    On Error Resume Next
+    ThisWorkbook.FollowHyperlink Address:=pathTemplate, NewWindow:=True
+    On Error GoTo ERR_HANDLER
+
+    '=== 工数取得マクロ作成済 フォルダを前面で開く ===
+    On Error Resume Next
+    ThisWorkbook.FollowHyperlink Address:=folderMacro, NewWindow:=True
+    On Error GoTo ERR_HANDLER
+
+    MsgBox "工数取得ver.5.2（大宮）転記完了", vbInformation
+
+    Exit Sub
