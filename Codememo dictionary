@@ -142,3 +142,110 @@ End If
 ERR_HANDLER:
     ErrorRollback "", "Process_Ver52 でエラー：" & Err.Description
 End Sub
+
+
+' 工数取得ver.5.2（大宮）への転記処理（正式版）
+Sub Process_Ver52(ByVal yyyymm As String, _
+                  ByVal 年 As String, _
+                  ByVal 月 As String)
+
+    On Error GoTo ERR_HANDLER
+
+    Dim wbVer52 As Workbook
+    Dim wbSource As Workbook
+    Dim wsTarget As Worksheet
+    Dim wsSource As Worksheet
+    Dim pathVer52 As String
+    Dim pathTemplate As String
+    Dim fileNameSource As String
+    Dim newFileName As String
+    Dim yy As String
+
+    '=== パス定義 ===
+    pathVer52 = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\" & _
+                "14.定例会\編集用資料\【原紙】\IDCF工数提出用マクロファイル\"
+
+    pathTemplate = "\\bbwcfs.local\share4\SBM1\SharePrj\大宮データセンター運用フォルダ\" & _
+                   "14.定例会\編集用資料\【原紙】\集計シート\作成済\"
+
+    '=== ver5.2 テンプレートを開く ===
+    Set wbVer52 = Workbooks.Open(pathVer52 & "工数取得ver.5.2（大宮）yymm.xlsm")
+    Set wsTarget = wbVer52.Worksheets("都度対応項目（時間）")
+
+    wsTarget.Range("I6").Value = 年
+    wsTarget.Range("I7").Value = 月
+
+    '=== 月次工数集計シートを特定・オープン ===
+    fileNameSource = Dir(pathTemplate & "月次工数集計シート" & yyyymm & "*.xlsm")
+
+    If fileNameSource = "" Then
+
+        ' ログ出力
+        ErrorRollback "", "原紙ファイルが見つかりません：" & pathTemplate
+
+        ' 操作員向けメッセージ
+        MsgBox _
+            "『月次工数集計シート" & yyyymm & "』 が見つからなかったため、" & vbCrLf & _
+            "ver.5.2ファイルを閉じて処理を中止しました。" & vbCrLf & vbCrLf & _
+            "【確認してください】" & vbCrLf & _
+            "1. Step6 の保存が正常に完了したか" & vbCrLf & _
+            "2. 保存先フォルダにファイルが存在するか" & vbCrLf & _
+            "3. 年月（" & yyyymm & "）の入力が正しいか", _
+            vbExclamation, "転記元ファイルが見つかりません"
+
+        wbVer52.Close SaveChanges:=False
+        Exit Sub
+    End If
+
+    Set wbSource = Workbooks.Open(pathTemplate & fileNameSource)
+    Set wsSource = wbSource.Worksheets("工数取得-都度対応項目（時間）")
+
+    '=== H10 / H14 / H18 / H22 の数値転記 ===
+    With wsTarget
+        .Range("H10").NumberFormat = "[h]:mm"
+        .Range("H10").Value = wsSource.Range("H10").Value
+
+        .Range("H14").NumberFormat = "[h]:mm"
+        .Range("H14").Value = wsSource.Range("H14").Value
+
+        .Range("H18").NumberFormat = "[h]:mm"
+        .Range("H18").Value = wsSource.Range("H18").Value
+
+        .Range("H22").NumberFormat = "[h]:mm"
+        .Range("H22").Value = wsSource.Range("H22").Value
+    End With
+
+    '=== O11:EH64 → O10 転記（値のみ） ===
+    wsSource.Range("O11:EH64").Copy
+    wsTarget.Range("O10").PasteSpecial Paste:=xlPasteValues
+
+    '=== ver5.2 ウィンドウタイトル名変更 ===
+    yy = Right$(年, 2)
+    newFileName = "工数取得ver.5.2（大宮）" & yy & 月 & ".xlsm"
+
+    wbVer52.Title = newFileName
+    wbVer52.Windows(1).Caption = newFileName
+    wbVer52.Windows(1).WindowState = xlMaximized
+    wbVer52.Activate
+
+    MsgBox _
+        "作業が完了しました。" & vbCrLf & _
+        "このファイルは一時的に '" & newFileName & "' に名前を変更しました。" & vbCrLf & _
+        "必ず「名前を付けて保存」してください。", _
+        vbInformation, "完了"
+
+    WriteLog "工数取得ver.5.2 転記完了：" & newFileName
+
+    '=== 月次工数集計シート側は閉じる ===
+    wbSource.Close SaveChanges:=False
+
+    '=== 「月次工数集計シート」の保存先フォルダを開く ===
+    Shell "explorer.exe """ & pathTemplate & """", vbNormalFocus
+
+    MsgBox "工数取得ver.5.2（大宮）転記完了", vbInformation
+
+    Exit Sub
+
+ERR_HANDLER:
+    ErrorRollback "", "Process_Ver52 でエラー :" & Err.Description
+End Sub
