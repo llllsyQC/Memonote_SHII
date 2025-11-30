@@ -251,18 +251,15 @@ ERR_HANDLER:
 End Sub
 
 
-    '=== 月次工数集計シート側は閉じる ===
-    wbSource.Close SaveChanges:=False
-
-    '=== 「月次工数集計シート」の保存先フォルダを開く（如果你还想开的话）===
-    On Error Resume Next
-    ThisWorkbook.FollowHyperlink Address:=pathTemplate, NewWindow:=True
-    On Error GoTo ERR_HANDLER
-
-    '=== 工数取得マクロ作成済 フォルダを前面で開く ===
-    On Error Resume Next
-    ThisWorkbook.FollowHyperlink Address:=folderMacro, NewWindow:=True
-    On Error GoTo ERR_HANDLER
+    '=== 工数取得マクロ作成済 フォルダを開く（存在チェック付き） ===
+    If Dir(folderMacro, vbDirectory) = "" Then
+        MsgBox "工数取得マクロ作成済 フォルダが存在しません：" & vbCrLf & folderMacro, _
+               vbExclamation, "フォルダ未検出"
+        WriteLog "工数取得マクロ作成済 フォルダ未検出：" & folderMacro
+    Else
+        Shell "explorer.exe /n,""" & folderMacro & """", vbNormalFocus
+        WriteLog "工数取得マクロ作成済 フォルダを開きました：" & folderMacro
+    End If
 
     MsgBox "工数取得ver.5.2（大宮）転記完了", vbInformation
 
