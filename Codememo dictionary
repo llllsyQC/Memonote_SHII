@@ -1,53 +1,76 @@
-[Omiya] Surveillance camera replacement work at Omiya center and operator's handling
+12月15日分です。
 
-Dear Mr. Santiago and Mr. Brazil,
+まず、顧客対応です。
+顧客エリア入室プロセス変更の件についてです。こちらは8月15日に発生し、12月12日以降も継続している案件です。
+森田が個人名義で、IDCF元木氏および茂木氏宛にメールを送付し、大宮OPをCCに入れています。内容としては、森田が受領していたSB寿村氏からIDCF岡田氏ほか関係者宛の14時53分のメールを転送し、情報共有を行いました。あわせて、MCDRおよびIDCF間でのルール変更について確認を行っています。
+なお、この内容はKIX11にも同内容で展開しています。
+本件は引き続き次勤務帯へ引き継ぎとなっています。
 
-This is the SoftBank Omiya Data Center operator office.
+次に、その他です。
+ITV更新、カメラ交換作業の調整についてです。こちらは12月5日発生で継続中の案件です。
+パナソニックEWネットワークスの生野様、加藤様宛にメールを送付し、工程表上、1月8日に実施予定のCoreスイッチ交換時に、カメラ映像が2時間表示されなくなるという認識で問題ないかを確認しています。
+こちらも対応は次勤務帯へ引き継ぎとなっています。
 
-We are writing to inform you that there is a planned replacement work of surveillance cameras and related switches at Omiya Center (entire building / all DC areas) from January 8th to January 29th (weekdays).
-We would also like to inform you of our handling during the work.
+続いて、KIX業務です。
+KIX11における顧客エリア入室プロセス変更についてです。内容は大宮DC側と同一で、8月15日発生、12月12日以降も継続中の案件です。
+森田が個人名義でIDCF元木氏、茂木氏宛にメールを送付し、大宮OPをCCに入れています。SB寿村氏からIDCF岡田氏ほか関係者宛の14時53分のメールを転送し、情報共有を実施しています。また、MCDRおよびIDCFでのルール変更について確認を行っています。
+こちらも次勤務帯へ引き継ぎとなっています。
 
-For the following time window in the work period, all surveillance cameras throughout the entire Omiya Data Center will be turned off, so we (SB operators) will stand guard at the hallways during the window to ensure security and monitor for any suspicious activity.
+⸻
 
-All surveillance cameras throughout the entire Omiya Data Center will be turned off from 13:00 to 15:00 on January 8th (Thursday).
-SB operators will stand guard at the 6th and 7th floor hallways.
+続いて、12月16日分です。
 
-Additionally, the other work windows related to the 6th and 7th floors (and parking area) are as follows.
-*On other days during the period, the work will be carried out on other floors.
+この日は、その他からです。
+11時30分よりSB拠点リーダMTGが開催されました。進行はIDCF茂木氏です。
 
-[January 8th: Core switch and PoE switch replacement]
-13:00 - 15:00 Core switch replacement for all surveillance cameras across the entire building
-13:00 - 14:00 PoE switch replacement for all 7th floor cameras
-14:00 - 14:30 PoE switch replacement for all 6th floor cameras
-14:30 - 15:00 PoE switch replacement for parking lot cameras
-*All surveillance cameras throughout the entire Omiya Data Center will be turned off.
-*The workers will enter the 6th and 7th floor hallways, but will not enter IBM areas.
+続いて、同じくその他として、ITV更新、カメラ交換作業の調整についてです。
+こちらは12月5日発生、12月15日から継続している案件です。
+21時49分に、パナソニックEWネットワークスの加藤様よりメールを受信しています。内容としては、工程表上、1月8日のCoreスイッチ交換時にカメラ映像が2時間表示されないという認識で間違いないとの回答でした。また、問題なければ作業自体は30分から1時間程度で完了できる見込みとのことです。
+本件も次勤務帯へ引き継ぎとなっています。
 
-[January 15th: Camera replacement]
-09:30 - 10:30 Parking lot camera replacement
+最後に、KIX業務です。
+KIX11の新規連絡先確認についてです。こちらは9月30日発生、12月12日以降も継続している案件です。
+まず、MCDR上宇都様からIBM Takata様宛のメールをCC受信しました。これまで入室申請時の宛先に含まれていなかったBitancur様を、今後CCに含めるという認識でよいか、また倉庫以外の入室申請でも必要かどうかについての確認内容です。
+その後、IBM Oswald様から上宇都様宛のメールをCC受信し、すべての申請でBitancur様をCCに含めて問題ないとの回答がありました。
+12月17日分です。
 
-[January 29th: Camera replacement]
-09:30 - 10:30 6th floor hallway cameras replacement
-10:30 - 12:00 7th floor hallway cameras replacement
-*Only hallway cameras will be replaced; cameras at the doors to the IBM area and inside the IBM area will remain in operation.
-(So we believe we do not need to stand guard.)
-*The workers will enter the 6th and 7th floor hallways, but will not enter IBM areas.
+まず、顧客対応です。
+13時から、大宮ファシリティMTGの事前打ち合わせを実施しています。
+出席者は、IDCF側が元木氏、茂木氏、亀氏、高平氏、前田氏、岩田氏、SB側が大橋氏、OPからは森田が参加しています。
+こちらは本番のMTGに向けた事前打ち合わせとして実施されています。
 
-And please feel free to contact us if you have any questions or concerns.
+次に、その他です。
+まず、設備業者の入館対応、空気清浄機点検の件です。
+9時37分頃、SBエンジニアリングの和久津様とミドリ安全の小峰様が受付に来室し、空気清浄機点検のため自販機室へ入室されました。
+その後、9時45分に再度来室があり、作業終了の連絡を受けています。
 
-Regards,
-各位
+続いて、設備業者入館対応、空気環境測定および照度測定の件です。
+10時10分に、SBエンジニアリングの水谷様、平野様が受付に来室し、空気環境測定および照度測定のため、まずOP事務室へ入室されました。
+その後、顧客オフィス、顧客倉庫への入室に伴い、都度受付対応を行い、IBMオフィスドアベルにてIBM Joys様、IBM Regalado様、IBM Ochengco様へそれぞれエスコート依頼を実施しています。
+午前中の作業終了連絡を受けた後、13時45分より午後の作業が再開され、OP事務室、顧客オフィス、顧客倉庫への入室対応を順次実施しています。
+IBM倉庫ドアベルに反応がなかった際は、IBMオフィスドアベルを使用してIBM Ochengco様へエスコート依頼を行っています。
+14時03分に、昼間の作業終了報告を受けています。
 
-IBM様宛てに送付する下記メールについて、内容を一部修正しましたので共有します。
+その後、夜間対応として、20時10分にSBエンジニアリングの中村様が受付に来室し、照度測定のため顧客オフィスへの入室対応を行いました。
+続いて顧客倉庫、OP室への入室対応を行い、IBMオフィスドアベルを通じてIBM Ochengco様へのエスコート依頼を実施しています。
+20時23分に夜間作業の終了報告を受けています。
 
-主な修正点としては、「全カメラ」という表現について、対象範囲が誤解されないよう、
-**「館内全体（全DCエリア）の全監視カメラ」**であることが明確に分かる表現へ変更しています。
-（例：「entire building」「all DC areas」「throughout the entire Omiya Data Center」等）
+引き続き、その他として、ITV更新、カメラ交換作業の調整です。
+こちらは12月5日発生、12月16日から継続している案件です。
+16時08分に、IDCF元木氏および亀氏宛にメールを送信し、1月8日の全カメラ停止時にOPが立哨する件について、IBM様へ報告するメールのドラフトを送付し、内容確認を依頼しています。
+その後、17時13分に元木氏より返信があり、「全カメラ」という表現を、「館内全カメラ」や「全館カメラ」など、館内すべてが対象であることが分かる表現に修正した上で送付するよう指示を受けています。
+本件は次勤務帯へ引き継ぎとなっています。
 
-作業内容・作業時間・立哨対応の有無といった運用上の対応自体には変更はありません。
-あくまで表現上の修正のみとなります。
+最後に、KIX業務です。
+まず、10時からKIX11ファシリティ月次MTGの事前打ち合わせを実施しています。
 
-上記内容にてIBM様へ連絡予定です。
-如有问题请告知。
+続いて、KIX11バッジ権限追加依頼対応です。
+10時30分にDLRポータルよりFCRTメール4通を受信し、IBM Takata様のバッジ権限追加について承認対応を開始しています。
+11時11分にIBM Oswald様へメールを送り、承認手続きを進めてよいか確認を行いました。
+11時15分にOswald様より承認手続きを進めるよう回答を受け、11時23分に一次回答を送信しています。
+その後、11時24分にDLRポータル上で当該申請の追加登録を実施しました。
+12時には、Oswald様へ追加登録完了のメールを送信し、更新したカスタマーコンタクトリストを添付しています。
 
-以上、よろしくお願いいたします。
+最後に、KIX11のContact Add Request対応です。
+16時56分にIDCF金氏よりメールを受信し、MCDR坂上様経由でIBM Brazil様からIBM Takata様のアカウント追加について問い合わせがあったが、大宮DC側に何か連絡が来ているかの確認でした。
+17時53分に金氏へ返信し、11月12日にメールで問い合わせを受けており、その際にIBM Oswald様からのメール申請が必要である旨を回答済みであることを報告しています。
