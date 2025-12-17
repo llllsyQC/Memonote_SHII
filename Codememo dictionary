@@ -1,8 +1,53 @@
-Dec 8  Conducted manufacturer-led inspection of insulation materials for indoor air conditioners.
-       ⇒ Insulation peeling was identified on one unit (PAC-7-4-18).
-       ⇒ No impact to SLA or cooling capacity.
+[Omiya] Surveillance camera replacement work at Omiya center and operator's handling
 
-       As a preventive measure, the affected PAC was stopped.
-       Permanent corrective action will be determined after reviewing the manufacturer’s report.
+Dear Mr. Santiago and Mr. Brazil,
 
-Dec 19 Awaiting manufacturer’s report.
+This is the SoftBank Omiya Data Center operator office.
+
+We are writing to inform you that there is a planned replacement work of surveillance cameras and related switches at Omiya Center (entire building / all DC areas) from January 8th to January 29th (weekdays).
+We would also like to inform you of our handling during the work.
+
+For the following time window in the work period, all surveillance cameras throughout the entire Omiya Data Center will be turned off, so we (SB operators) will stand guard at the hallways during the window to ensure security and monitor for any suspicious activity.
+
+All surveillance cameras throughout the entire Omiya Data Center will be turned off from 13:00 to 15:00 on January 8th (Thursday).
+SB operators will stand guard at the 6th and 7th floor hallways.
+
+Additionally, the other work windows related to the 6th and 7th floors (and parking area) are as follows.
+*On other days during the period, the work will be carried out on other floors.
+
+[January 8th: Core switch and PoE switch replacement]
+13:00 - 15:00 Core switch replacement for all surveillance cameras across the entire building
+13:00 - 14:00 PoE switch replacement for all 7th floor cameras
+14:00 - 14:30 PoE switch replacement for all 6th floor cameras
+14:30 - 15:00 PoE switch replacement for parking lot cameras
+*All surveillance cameras throughout the entire Omiya Data Center will be turned off.
+*The workers will enter the 6th and 7th floor hallways, but will not enter IBM areas.
+
+[January 15th: Camera replacement]
+09:30 - 10:30 Parking lot camera replacement
+
+[January 29th: Camera replacement]
+09:30 - 10:30 6th floor hallway cameras replacement
+10:30 - 12:00 7th floor hallway cameras replacement
+*Only hallway cameras will be replaced; cameras at the doors to the IBM area and inside the IBM area will remain in operation.
+(So we believe we do not need to stand guard.)
+*The workers will enter the 6th and 7th floor hallways, but will not enter IBM areas.
+
+And please feel free to contact us if you have any questions or concerns.
+
+Regards,
+各位
+
+IBM様宛てに送付する下記メールについて、内容を一部修正しましたので共有します。
+
+主な修正点としては、「全カメラ」という表現について、対象範囲が誤解されないよう、
+**「館内全体（全DCエリア）の全監視カメラ」**であることが明確に分かる表現へ変更しています。
+（例：「entire building」「all DC areas」「throughout the entire Omiya Data Center」等）
+
+作業内容・作業時間・立哨対応の有無といった運用上の対応自体には変更はありません。
+あくまで表現上の修正のみとなります。
+
+上記内容にてIBM様へ連絡予定です。
+如有问题请告知。
+
+以上、よろしくお願いいたします。
