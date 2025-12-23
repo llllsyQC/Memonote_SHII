@@ -1,43 +1,29 @@
-Dear Mr. Santiago and Mr. Brazil,
 
-This is the SoftBank Omiya Data Center operator office.
+The on-site investigation was conducted by SB Engineering (Mr. Kuse), and the following was confirmed:
 
-This message is to inform you that a BMS alert (BAD440) was detected on [December 10] at [13:00], the details of which are as follows:
+The alert was caused by a temporary spike in power usage that exceeded the threshold set on the equipment.  
+After stopping part of the relevant device and adjusting the threshold value (which was initially set rather strictly), the alert was cleared.  
+No abnormality in the current operation has been observed, and recurrence is unlikely under the updated settings.
 
-Affected area: Power Room  
-Affected equipment: UPS-related equipment  
-Alert detail: BAD440  
-Current status: Running normally  
-Restored at: 13:45
-
-This was detected for only a few seconds and automatically recovered.  
-Although the root cause is not yet fully identified, it is assumed that the alarm may have been triggered by either a temporary malfunction of the sensor or someone approaching it momentarily.  
-Currently, there is no abnormality in temperature or humidity in the area.  
-We will continue the investigation and inform you of any new findings.
-
-We apologize for any inconvenience caused.
-
-IDCF(金)様
+We apologize for any concern this may have caused.  
+Please feel free to contact us if you have any questions.
 
 お疲れ様です。  
 大宮データセンターの◆◆です。
 
-以下の設備にて異常表示を検知したため、ご報告いたします。
+以下の設備にて障害を検知しましたので報告いたします。
 
-障害発生日時：12/10 13:00  
-障害復旧日時：12/10 13:45  
+■障害発生日時：2025/12/10　13:00  
+■障害復旧日時：2025/12/10　13:45  
 
-異常設備：UPS関連設備  
-BMS表示名：BAD440  
-状況：現在、正常稼働中です。
+■異常設備：UPS関連機器（BAD440）  
+■BMS表示　：BAD440  
+■状況　　　：現在は復旧済み、稼働に問題はありません。
 
-本事象について、SBエンジニアリング 久世様より現地確認を行った結果、  
-警報は数秒以内に自動で復旧しており、現在は温湿度にも異常が見られないことを確認しました。  
-原因については未だ特定には至っておりませんが、測定器の一時的な故障、  
-あるいは人が一時的に近づいたこと等が想定されます。
+【経緯】  
+SBエンジニアリング久世様にて現地確認を実施いただいた結果、一部のUPS関連設備において、電力使用量が閾値を一時的に超過したため、デマンド警報が発報されたとのことでした。  
+該当設備の一部を稼働停止し、警報の閾値設定（元々厳しめの設定）を調整したため、再発の可能性は低いと考えられます。
 
-引き続き調査を継続し、進捗がありましたら改めてご報告いたします。
-
-なお、FastHelp5にも上記内容を記載いたしました。
+FastHelp5にも上記内容を記載いたしました。
 
 以上、よろしくお願いいたします。
